@@ -1,5 +1,5 @@
 {
-  "name": "@discord-components/v2",
+  "name": "discordjs-components-v2",
   "version": "1.0.0",
   "description": "Full-featured builder and manager for Discord Components V2",
   "keywords": [
@@ -9,8 +9,16 @@
     "discord.js",
     "v2"
   ],
+  "homepage": "https://github.com/ichh0/discord-components-v2#readme",
+  "bugs": {
+    "url": "https://github.com/ichh0/discord-components-v2/issues"
+  },
   "license": "MIT",
   "author": "Your Name",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ichh0/discord-components-v2"
+  },
   "files": [
     "dist"
   ],
@@ -21,12 +29,14 @@
     "prepublishOnly": "npm run build",
     "test": "jest"
   },
+  "dependencies": {
+    "all": "^0.0.0"
+  },
   "devDependencies": {
     "@types/node": "^20.0.0",
-    "discord-api-types": "^0.37.83",
     "typescript": "^5.0.0"
   },
   "peerDependencies": {
-    "discord-api-types": "^0.37.83"
+    "discord-api-types": "^0.38.53"
   }
 }
