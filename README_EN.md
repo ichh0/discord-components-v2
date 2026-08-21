@@ -2,7 +2,7 @@
 
 [🇷🇺 Русская версия](README.md)
 
-> [!IMPORTANT]
+> [!Caution]
 >
 > ### VIBCODE
 >
