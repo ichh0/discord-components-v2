@@ -2,7 +2,7 @@
 
 [🇬🇧 English version](README_EN.md)
 
-> [!ВАЖНО]
+> [!Caution]
 >
 > ### ВАЙБКОД
 >
