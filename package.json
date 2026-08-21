@@ -1,0 +1,32 @@
+{
+  "name": "@discord-components/v2",
+  "version": "1.0.0",
+  "description": "Full-featured builder and manager for Discord Components V2",
+  "keywords": [
+    "builder",
+    "components",
+    "discord",
+    "discord.js",
+    "v2"
+  ],
+  "license": "MIT",
+  "author": "Your Name",
+  "files": [
+    "dist"
+  ],
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build",
+    "test": "jest"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "discord-api-types": "^0.37.83",
+    "typescript": "^5.0.0"
+  },
+  "peerDependencies": {
+    "discord-api-types": "^0.37.83"
+  }
+}
