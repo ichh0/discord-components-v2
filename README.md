@@ -1,4 +1,9 @@
-# 📦 @discord-components/v2
+# 📦 discordjs-components-v2
+
+[![npm version](https://badge.fury.io/js/discordjs-components-v2.svg)](https://www.npmjs.com/package/discordjs-components-v2)
+[![GitHub issues](https://img.shields.io/github/issues/ichh0/discord-components-v2)](https://github.com/ichh0/discord-components-v2/issues)
+[![GitHub stars](https://img.shields.io/github/stars/ichh0/discord-components-v2)](https://github.com/ichh0/discord-components-v2)
+[![GitHub license](https://img.shields.io/github/license/ichh0/discord-components-v2)](https://github.com/ваш-логин/discord-components-v2/blob/main/license)
 
 [🇬🇧 English version](README_EN.md)
 
