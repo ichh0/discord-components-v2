@@ -1,6 +1,13 @@
 # 📦 @discord-components/v2
 
-> ⚡ **#VIBECODE** — This library was developed via neural network in a couple of hours for convenient work with Discord Components V2.
+[🇷🇺 Русская версия](README.md)
+
+> [!IMPORTANT]
+>
+> ### VIBCODE
+>
+> The library was made with minimal code control and edits, created because I still haven’t seen any alternatives on the npm market
+> I do not oblige you to use this library, I will be glad to see your stars, forks and [issues](https://github.com/ichh0/discord-components-v2/issues)
 
 > A full-featured library for working with **Discord Components V2** (the new message format with components).  
 > Built on `discord-api-types/v10` and compatible with `discord.js` (v14+).
