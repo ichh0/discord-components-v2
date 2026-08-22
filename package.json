@@ -7,8 +7,8 @@
     "components",
     "components-v2",
     "discord",
-    "discord.js",
-    "discord-api-types"
+    "discord-api-types",
+    "discord.js"
   ],
   "homepage": "https://github.com/ichh0/discord-components-v2#readme",
   "bugs": {
@@ -30,11 +30,11 @@
     "prepublishOnly": "npm run build",
     "test": "npm run build && node --test \"test/**/*.mjs\""
   },
-  "peerDependencies": {
-    "discord-api-types": ">=0.38.8"
-  },
   "devDependencies": {
     "@types/node": "^20.0.0",
     "typescript": "^5.0.0"
+  },
+  "peerDependencies": {
+    "discord-api-types": ">=0.38.8"
   }
 }
