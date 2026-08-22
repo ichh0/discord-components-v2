@@ -99,6 +99,18 @@ await interaction.editReply({ components, flags: 32768 });
 
 Input data is never mutated — the editor works on a deep copy.
 
+Whole message objects are accepted too (`await ctx.fetchReply()`, a discord.js `Message` instance, or its `toJSON()`), including wrapped in an array: a message is detected by its type (0/19/20/… — not a component type) and unwrapped to its `components`. A message without components yields an empty array; junk entries without a valid `type` are dropped. Message flags are NOT carried over — see below.
+
+> ⚠️ **When editing a CV2 message, keep the `IS_COMPONENTS_V2` (32768) flag.** Without it Discord rejects containers with the same `UNION_TYPE_CHOICES` error. Easiest: reuse the fetched message's flags:
+>
+> ```ts
+> const fetched = await ctx.fetchReply();
+> await ctx.editReply({
+>   components: editComponents(fetched).disableButtons().toJSON(),
+>   flags: fetched.flags, // already contains IS_COMPONENTS_V2
+> });
+> ```
+
 Automatic cleanup after removals: empty ActionRows are pruned; a Section without texts or without an accessory is removed entirely (Discord rejects those).
 
 ### Selectors

@@ -11,7 +11,7 @@ import {
 } from "discord-api-types/v10";
 import { LIMITS, IS_COMPONENTS_V2, EPHEMERAL, type RawComponent } from "../core/constants";
 import { isContainer } from "../core/guards";
-import { isRecord, normalizeComponents, toRaw } from "../core/normalize";
+import { hasComponentType, isRecord, normalizeComponents, toRaw } from "../core/normalize";
 import type { ComponentSelector } from "../core/selector";
 import { findComponent, findComponents, type ComponentRef } from "../core/walk";
 import { validateComponents } from "../core/validate";
@@ -89,13 +89,35 @@ export class V2Builder {
   private attachments: FilePayload[] = [];
   private plainContent: string | null = null;
 
-  constructor(data?: Partial<APIContainerComponent>) {
+  /**
+   * @param data Either container metadata (`{ accent_color, spoiler, id }`)
+   *   or a plain array of children. An array is accepted so that awkward
+   *   sources work out of the box:
+   *
+   *   - `new V2Builder(message.components)`
+   *   - `new V2Builder(ctx.message.components[0].components)` (CV2 container children)
+   *   - `parseComponents(ctx.message.components)`
+   *
+   *   Unknown fields are dropped on purpose — spreading arbitrary input used
+   *   to leak indexed keys (`"0": {...}`) into the serialized container,
+   *   which the Discord API rejects.
+   */
+  constructor(data?: Partial<APIContainerComponent> | readonly unknown[]) {
+    const source: Partial<APIContainerComponent> = Array.isArray(data)
+      ? { components: data as APIContainerComponent["components"] }
+      : { ...((data as Partial<APIContainerComponent> | undefined) ?? {}) };
+
     this.containerData = {
       type: ComponentType.Container,
-      components: [],
-      ...(data ? (JSON.parse(JSON.stringify(data)) as Partial<APIContainerComponent>) : {}),
+      components: Array.isArray(source.components)
+        ? (JSON.parse(JSON.stringify(source.components)) as APIContainerComponent["components"])
+        : [],
     };
-    if (!Array.isArray(this.containerData.components)) this.containerData.components = [];
+    if (typeof source.id === "number") this.containerData.id = source.id;
+    if (source.accent_color !== undefined && source.accent_color !== null) {
+      this.containerData.accent_color = source.accent_color;
+    }
+    if (typeof source.spoiler === "boolean") this.containerData.spoiler = source.spoiler;
   }
 
   // ------------------------------------------------------------------
@@ -121,15 +143,32 @@ export class V2Builder {
       candidate = toRaw(candidate);
     }
 
-    const builder = new V2Builder();
-
-    if (
+    // Locate a message-like source to keep its plain content. A fetched
+    // Message has BOTH `type` (a *message* type like 20) and `components`,
+    // so we check for a valid component type instead of mere presence of
+    // the `type` field. Arrays may wrap whole messages too
+    // (e.g. `[await ctx.fetchReply()]`).
+    let messageSource: Record<string, unknown> | null = null;
+    if (Array.isArray(candidate)) {
+      for (const element of candidate) {
+        const raw = toRaw<Record<string, unknown> | null | undefined>(element);
+        if (isRecord(raw) && Array.isArray(raw.components) && !hasComponentType(raw)) {
+          messageSource = raw;
+          break;
+        }
+      }
+    } else if (
       isRecord(candidate) &&
       Array.isArray(candidate.components) &&
-      !("type" in candidate) &&
-      typeof candidate.content === "string"
+      !hasComponentType(candidate)
     ) {
-      builder.plainContent = candidate.content as string;
+      messageSource = candidate;
+    }
+
+    const builder = new V2Builder();
+
+    if (messageSource && typeof messageSource.content === "string") {
+      builder.plainContent = messageSource.content;
     }
 
     const roots = normalizeComponents(candidate) as RawComponent[];

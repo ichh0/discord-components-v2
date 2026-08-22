@@ -9,6 +9,32 @@ export { ComponentType, MessageFlags };
 /** Any raw (JSON-serializable) message component, as returned by the Discord API. */
 export type RawComponent = APIMessageComponent;
 
+/**
+ * Every component type number that may appear inside a payload.
+ *
+ * Used to tell real components apart from whole message objects: a fetched
+ * Message also exposes a numeric `type` (0/19/20/21/... — a *message* type)
+ * alongside its `components` array, so presence of `type` alone is not enough
+ * to decide whether something is a component.
+ */
+export const COMPONENT_TYPES: ReadonlySet<number> = new Set<number>([
+  ComponentType.ActionRow,
+  ComponentType.Button,
+  ComponentType.StringSelect,
+  ComponentType.TextInput,
+  ComponentType.UserSelect,
+  ComponentType.RoleSelect,
+  ComponentType.MentionableSelect,
+  ComponentType.ChannelSelect,
+  ComponentType.Section,
+  ComponentType.TextDisplay,
+  ComponentType.Thumbnail,
+  ComponentType.MediaGallery,
+  ComponentType.File,
+  ComponentType.Separator,
+  ComponentType.Container,
+]);
+
 /** Flags value that enables Components V2 for a message. */
 export const IS_COMPONENTS_V2 = 1 << 15; // 32768
 

@@ -28,7 +28,7 @@
   "scripts": {
     "build": "tsc",
     "prepublishOnly": "npm run build",
-    "test": "npm run build && node --test \"test/**/*.mjs\""
+    "test": "npm run build && node --test \"src/test/**/*.mjs\""
   },
   "devDependencies": {
     "@types/node": "^20.0.0",

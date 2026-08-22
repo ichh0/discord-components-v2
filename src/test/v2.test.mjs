@@ -8,7 +8,7 @@ import {
   ComponentType,
   findComponents,
   validateComponents,
-} from "../dist/index.js";
+} from "../../dist/index.js";
 
 const CONTAINER = ComponentType.Container;
 const TEXT = ComponentType.TextDisplay;
@@ -106,6 +106,150 @@ test("parse: accepts message-like objects and toJSON duck-typing", () => {
 
   const fakeDjsInstance = { toJSON: () => makeBuilt().components };
   assert.equal(parseComponents(fakeDjsInstance).build().components.length, 1);
+});
+
+test("parse: every ergonomic entry path yields a clean container (no indexed junk)", () => {
+  const children = [
+    { type: TEXT, id: 2, content: "123123" },
+    { type: ROW, id: 3, components: [{ type: BUTTON, style: 2, label: "213", id: 4, custom_id: "a_" }] },
+    { type: ROW, id: 5, components: [{ type: BUTTON, style: 2, label: "213", id: 6, custom_id: "a__" }] },
+    { type: ROW, id: 7, components: [{ type: BUTTON, style: 2, label: "213", id: 8, custom_id: "a___" }] },
+  ];
+  const container = { type: CONTAINER, id: 1, accent_color: null, spoiler: false, components: children };
+
+  const paths = [
+    ["children array", children],
+    ["outer [container]", [container]],
+    ["single container", container],
+    ["message-like wrapper", { components: [container] }],
+    ["constructor(children)", new V2Builder(children)],
+  ];
+
+  for (const [name, input] of paths) {
+    const json = parseComponents(input).build();
+    assert.equal(json.flags, 32768, name);
+    assert.equal(json.components.length, 1, name);
+    const root = json.components[0];
+    assert.equal(root.type, CONTAINER, name);
+    // no numeric-key garbage like {"0": {...}} next to an empty components
+    for (const key of Object.keys(root)) {
+      assert.match(key, /^(type|id|accent_color|spoiler|components)$/, `${name}: junk key "${key}"`);
+    }
+    assert.ok(Array.isArray(root.components), name);
+    assert.equal(root.components.length, 4, name);
+    if (name !== "children array" && name !== "constructor(children)") {
+      assert.equal(root.id, 1, name); // metadata survives absorption
+    }
+  }
+});
+
+/** Shape of `ctx.fetchReply()` / `interaction.fetchReply()` for a CV2 message. */
+function makeFetchedReply() {
+  return {
+    channelId: "1540382355527835698",
+    guildId: "1540382070981791826",
+    id: "1540672776430690434",
+    createdTimestamp: 1787395414217,
+    type: 20, // message type — NOT a valid component type
+    system: false,
+    content: "",
+    authorId: "1525082523330150512",
+    pinned: false,
+    tts: false,
+    embeds: [],
+    flags: 32768, // IS_COMPONENTS_V2
+    attachments: [],
+    stickers: [],
+    components: [
+      {
+        type: CONTAINER,
+        id: 1,
+        accent_color: null,
+        spoiler: false,
+        components: [
+          { type: TEXT, id: 2, content: "Hello world" },
+          {
+            type: ComponentType.Section,
+            id: 3,
+            accessory: { type: BUTTON, id: 5, custom_id: "test2", style: 2, label: "test", disabled: true },
+            components: [{ type: TEXT, id: 4, content: "**hello**" }],
+          },
+          {
+            type: ROW,
+            id: 6,
+            components: [
+              { type: BUTTON, id: 7, custom_id: "fff", style: 2, label: "dsbButtons", disabled: true },
+            ],
+          },
+          {
+            type: ROW,
+            id: 8,
+            components: [
+              {
+                type: ComponentType.StringSelect,
+                id: 9,
+                custom_id: "test",
+                placeholder: "choice",
+                min_values: 1,
+                max_values: 1,
+                options: [{ label: "123", value: "fdsfsdf" }],
+              },
+            ],
+          },
+          { type: TEXT, id: 10, content: "-# 123123" },
+        ],
+      },
+    ],
+  };
+}
+
+test("parse: unwraps full fetched Message objects (regression: type must not be 20)", () => {
+  const fetched = makeFetchedReply();
+
+  // bare message
+  let edited = editComponents(fetched).enableButtons().toJSON();
+  assert.equal(edited.length, 1);
+  assert.equal(edited[0].type, CONTAINER); // container root, NOT the whole message
+  assert.ok(flatten(edited).every((c) => c.type !== 20));
+  assert.equal(flatten(edited).find((c) => c.custom_id === "fff").disabled, false);
+
+  // message wrapped in an array (discordx ctx.fetchReply() shape)
+  edited = editComponents([fetched]).enableButtons().toJSON();
+  assert.equal(edited.length, 1);
+  assert.equal(edited[0].type, CONTAINER);
+
+  // snake_case raw API shape is unwrapped the same way
+  edited = editComponents([{ ...fetched }]).disableButtons().toJSON();
+  assert.equal(edited[0].type, CONTAINER);
+
+  // parseComponents works too and keeps plain content
+  const parsed = parseComponents({ ...fetched, content: "hello content" });
+  assert.equal(parsed.build().content, "hello content");
+  assert.equal(parsed.build().components[0].type, CONTAINER);
+
+  // toJSON duck-typing of a real djs Message instance
+  const djsLike = { toJSON: () => ({ ...fetched }) };
+  assert.equal(editComponents(djsLike).length, 1);
+});
+
+test("parse: message without components yields empty payload", () => {
+  const fetched = makeFetchedReply();
+  delete fetched.components;
+  assert.deepEqual(editComponents(fetched).toJSON(), []);
+
+  const empty = editComponents([makeFetchedReply()]).remove(CONTAINER).toJSON();
+  assert.deepEqual(empty, []);
+});
+
+test("parse: drops junk entries without a valid component type", () => {
+  const edited = editComponents([
+    makeFetchedReply(),
+    {},
+    null,
+    42,
+    { type: 20 }, // a message type sneaking into an array
+  ]).toJSON();
+  assert.equal(edited.length, 1);
 });
 
 test("parse then edit: disable all buttons including future additions", () => {

@@ -9,6 +9,8 @@
  * instance (i.e. exposes `toJSON()`) is accepted and converted to raw JSON.
  */
 
+import { COMPONENT_TYPES } from "./constants";
+
 export type WithToJSON = { toJSON(): unknown };
 
 function hasToJSON(value: unknown): value is WithToJSON {
@@ -53,20 +55,34 @@ export function cloneDeep<T>(value: T): T {
  * Accepted shapes:
  * - an array of components / builders / discord.js instances
  * - a single component / builder
- * - a message-like object: `{ components: [...] }` (e.g. a fetched Message)
+ * - a message-like object: `{ components: [...] }` (e.g. `await ctx.fetchReply()`,
+ *   a discord.js Message instance, or its raw JSON — bare or wrapped in an array)
  */
 export function normalizeComponents(input: unknown): import("./constants").RawComponent[] {
   let list: unknown[];
 
   if (Array.isArray(input)) {
-    list = input;
-  } else if (isRecord(input) && Array.isArray(input.components)) {
-    // Message-like object. If it is itself a component (e.g. a container),
-    // treat it as a single root instead of unwrapping.
-    if ("type" in input) {
-      list = [input];
+    // An array may mix real components with whole message objects (e.g.
+    // `[await ctx.fetchReply()]`). Unwrap any message-like element so the
+    // message itself never leaks into the payload as a fake root component.
+    list = [];
+    for (const item of input) {
+      const raw = toRaw<Record<string, unknown> | null | undefined>(item);
+      if (isRecord(raw) && isMessageLike(raw)) {
+        list.push(...(raw.components as unknown[]));
+      } else {
+        list.push(item);
+      }
+    }
+  } else if (isRecord(toRaw(input))) {
+    const raw = toRaw<Record<string, unknown>>(input);
+    if (isMessageLike(raw)) {
+      // Message-like object. A fetched Message has BOTH a numeric `type`
+      // (a *message* type such as 20) and a `components` array, so we must
+      // unwrap it instead of treating it as one giant component.
+      list = raw.components as unknown[];
     } else {
-      list = input.components;
+      list = [input];
     }
   } else if (input === undefined || input === null) {
     list = [];
@@ -78,10 +94,27 @@ export function normalizeComponents(input: unknown): import("./constants").RawCo
   for (const item of list) {
     const raw = toRaw<Record<string, unknown> | null | undefined>(item);
     if (!isRecord(raw)) continue;
+    // Drop junk entries (e.g. `{}`): every payload component must carry a
+    // numeric type known to the Discord API.
+    if (!hasComponentType(raw)) continue;
     // Clone before normalizing so caller-owned data is never mutated.
     roots.push(deepNormalizeComponent(cloneDeep(raw)));
   }
   return roots as unknown as import("./constants").RawComponent[];
+}
+
+/** True when `type` is a real component type (not e.g. a message type like 20). */
+export function hasComponentType(value: Record<string, unknown>): boolean {
+  return typeof value.type === "number" && COMPONENT_TYPES.has(value.type);
+}
+
+/**
+ * Message-like object: carries a `components` array but is NOT itself a
+ * component (no valid component `type`). Matches both camelCase discord.js
+ * JSON and snake_case raw API payloads.
+ */
+function isMessageLike(raw: Record<string, unknown>): boolean {
+  return Array.isArray(raw.components) && !hasComponentType(raw);
 }
 
 /** Recursively normalizes nested children/accessories of a raw component. */
