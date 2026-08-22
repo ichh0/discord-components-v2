@@ -1,40 +1,79 @@
-export * from "./adapters/discordJsAdapter";
-export * from "./builders/ActionRowBuilder";
-// Builders
-export * from "./builders/ButtonBuilder";
-export * from "./builders/ChannelSelectBuilder";
-export * from "./builders/ComponentBuilder";
-export * from "./builders/ContainerBuilder";
-export * from "./builders/MentionableSelectBuilder";
-export * from "./builders/MessageBuilder";
-export * from "./builders/RoleSelectBuilder";
-export * from "./builders/SelectMenuBuilder";
-export * from "./builders/SeparatorBuilder";
-export * from "./builders/TextDisplayBuilder";
-export * from "./builders/UserSelectBuilder";
 // Core
-export * from "./core/Component";
 export {
-  COMPONENT_TYPE_NAMES,
-  getAllowedChildTypes,
-  getComponentTypeName,
-  getMaxChildren,
-  isAllowedChild,
-  isContainerComponent,
-} from "./core/ComponentMap";
-export {
-  CONTAINER_COMPONENT_TYPES,
+  EPHEMERAL,
+  IS_COMPONENTS_V2,
+  LIMITS,
   ComponentType,
-  INTERACTIVE_COMPONENT_TYPES,
-  isActionRowCompatible,
-  isContainerType,
-  isInteractiveType,
-} from "./core/ComponentType";
-// Managers
-export * from "./managers/BuilderManager";
-export * from "./managers/ComponentSearcher";
-// Utils
-export * from "./utils/cloneDeep";
-export * from "./utils/emoji";
-export * from "./utils/flags";
-export * from "./utils/mergeComponents";
+  MessageFlags,
+} from "./core/constants";
+export type { RawComponent } from "./core/constants";
+export {
+  componentName,
+  getChildren,
+  hasCustomId,
+  isActionRow,
+  isAnySelect,
+  isButton,
+  isChannelSelect,
+  isContainer,
+  isInteractive,
+  isMediaGallery,
+  isMentionableSelect,
+  isRoleSelect,
+  isSection,
+  isSeparator,
+  isStringSelect,
+  isTextDisplay,
+  isUserSelect,
+} from "./core/guards";
+export { cloneDeep, normalizeComponents, toRaw } from "./core/normalize";
+export { matchesSelector } from "./core/selector";
+export type { ComponentSelector } from "./core/selector";
+export {
+  countComponents,
+  findComponent,
+  findComponents,
+  walkComponents,
+} from "./core/walk";
+export type { ComponentRef } from "./core/walk";
+export { validateComponents } from "./core/validate";
+export type { ValidationResult } from "./core/validate";
+
+// Builder
+export { parseComponents, parseEmoji, V2Builder } from "./builder/V2Builder";
+export type { V2Payload } from "./builder/V2Builder";
+export type {
+  ButtonOptions,
+  ButtonStyleName,
+  ChannelSelectOptions,
+  FieldOptions,
+  FilePayload,
+  MediaItemOptions,
+  SectionOptions,
+  SelectBaseOptions,
+  SendOptions,
+  SendTarget,
+  StringSelectOptions,
+} from "./builder/types";
+
+// Editing
+export { ComponentsEditor, editComponents } from "./edit/editor";
+export {
+  disableButtons,
+  enableButtons,
+  getTextContents,
+  keepOnly,
+  removeComponents,
+  replaceText,
+  setButtonLabel,
+  setDisabled,
+} from "./edit/operations";
+export type { DisableOptions, RemoveOptions } from "./edit/operations";
+
+// Convenience re-exports of raw API types consumers commonly need
+export type {
+  APIContainerComponent,
+  APIMessageComponent,
+  SeparatorSpacingSize as SeparatorSpacingSizeType,
+} from "discord-api-types/v10";
+export { SeparatorSpacingSize } from "discord-api-types/v10";

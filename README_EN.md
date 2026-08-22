@@ -1,464 +1,150 @@
-# 📦 discordjs-components-v2
+# 📦 discordjs-components-v2 v2
 
 [![npm version](https://badge.fury.io/js/discordjs-components-v2.svg)](https://www.npmjs.com/package/discordjs-components-v2)
-[![GitHub issues](https://img.shields.io/github/issues/ichh0/discord-components-v2)](https://github.com/ichh0/discord-components-v2/issues)
-[![GitHub stars](https://img.shields.io/github/stars/ichh0/discord-components-v2)](https://github.com/ichh0/discord-components-v2)
-[![GitHub license](https://img.shields.io/github/license/ichh0/discord-components-v2)](https://github.com/ваш-логин/discord-components-v2/blob/main/license)
+[![GitHub license](https://img.shields.io/github/license/ichh0/discord-components-v2)](https://github.com/ichh0/discord-components-v2/blob/main/license)
 
-[🇷🇺 Русская версия](README.md)
+[🇷🇺 Русский](README.md)
 
-> [!Caution]
->
-> ### VIBCODE
->
-> The library was made with minimal code control and edits, created because I still haven’t seen any alternatives on the npm market
-> I do not oblige you to use this library, I will be glad to see your stars, forks and [issues](https://github.com/ichh0/discord-components-v2/issues)
+A library for **Discord Components V2**: a builder, a parser and editing utilities — **cache-free**.
 
-> A full-featured library for working with **Discord Components V2** (the new message format with components).  
-> Built on `discord-api-types/v10` and compatible with `discord.js` (v14+).
+The core idea: components are plain JSON. Discord itself returns the full component tree in `message.components`, so you don't need to store message state anywhere: fetch → parse → edit → send.
+
+> [!NOTE]
+> Built on plain `discord-api-types/v10` structures. discord.js is not required at runtime nor as a peer dependency — the output is fully compatible with discord.js v14 (pass JSON straight into `components:`).
 
 ---
 
-## 📌 Table of Contents
-
-1. [Installation](#-установка)
-2. [What are Components V2](#-что-такое-components-v2)
-3. [Quick Start](#-быстрый-старт)
-4. [Core – Types and Utilities](#-core--типы-и-утилиты)
-5. [Builders – Creating Components](#-builders--создание-компонентов)
-   - [ButtonBuilder (button)](#buttonbuilder-кнопка)
-   - [SelectMenuBuilder (dropdown)](#selectmenubuilder-выпадающий-список)
-   - [ChannelSelectBuilder / RoleSelectBuilder / MentionableSelectBuilder / UserSelectBuilder](#каналы-роли-упоминания-пользователи)
-   - [TextDisplayBuilder (text block)](#textdisplaybuilder-текстовый-блок)
-   - [ContainerBuilder (container)](#containerbuilder-контейнер)
-   - [SeparatorBuilder (separator)](#separatorbuilder-разделитель)
-   - [ActionRowBuilder (action row)](#actionrowbuilder-ряд-действий)
-   - [MessageBuilder (full message)](#messagebuilder-всё-сообщение)
-   - [ComponentBuilder (factory)](#componentbuilder-фабрика)
-6. [Managers – Search and Editing](#-managers--поиск-и-редактирование)
-   - [BuilderManager](#buildermanager)
-   - [ComponentSearcher](#componentsearcher)
-7. [Utils – Helper Functions](#-utils--вспомогательные-функции)
-8. [Validation](#-валидация)
-9. [Full Example Scenario](#-пример-полного-сценария)
-10. [Build and Publish](#-сборка-и-публикация)
-
----
-
-## 📦 Installation
+## 📦 Install
 
 ```bash
-npm install @discord-components/v2
+npm install discordjs-components-v2 discord-api-types
 ```
 
-or
+## 🚀 Quick start
 
-```bash
-yarn add @discord-components/v2
-```
+```ts
+import { V2Builder } from "discordjs-components-v2";
 
-**Peer dependency:** `discord-api-types` (version >= 0.37.83)
-
-```bash
-npm install discord-api-types
-```
-
----
-
-## 🧠 What are Components V2
-
-Discord is gradually introducing a new component format (sometimes called **Message Components V2**).  
-Instead of old `embeds` and `content`, you can now use:
-
-- `TextDisplay` (type 10) – plain text with Markdown.
-- `Container` (type 12) – a block with accent color, containing other components inside.
-- `Separator` (type 14) – horizontal divider.
-- Buttons (type 2) and all types of select menus (type 3, 5, 6, 7, 8) remain, but are embedded in the new hierarchy.
-
-The main difference is the **`flags: 32768`** flag, which must be specified when sending.
-
-Our library completely abstracts this complexity, providing a convenient **builder pattern**.
-
----
-
-## 🚀 Quick Start
-
-```typescript
-import { ComponentBuilder } from "@discord-components/v2";
-
-// Build the message
-const message = ComponentBuilder.message()
-  .addText("# Hello, world!")
-  .addContainer(
-    ComponentBuilder.container({ accentColor: 0x5865f2 })
-      .addText("Inside the container")
-      .addComponent(
-        ComponentBuilder.button()
-          .setLabel("Click me")
-          .setStyle(1) // Primary
-          .setCustomId("my_button"),
-      ),
+const payload = new V2Builder()
+  .color(0xffaa00)
+  .text("# 🎉 Giveaway")
+  .field("Prize", "100 coins")
+  .buttons(
+    { id: "join", label: "Join", style: "Success", emoji: "🎟️" },
+    { url: "https://example.com", label: "Rules" },
   )
-  .addRow(
-    ComponentBuilder.button()
-      .setLabel("Cancel")
-      .setStyle(4) // Danger
-      .setCustomId("cancel"),
-  )
-  .build();
+  .selectMenu.string({
+    customId: "category",
+    placeholder: "Pick a category",
+    options: [
+      { label: "Games", value: "games", emoji: "🎮" },
+      { label: "Skins", value: "skins" },
+    ],
+  })
+  .build(); // → { components, files?, flags: 32768 }
 
-// Send via discord.js
-await interaction.editReply({
-  components: message.components,
-  flags: message.flags,
-});
+await interaction.reply(payload);
 ```
 
+`build()` returns a ready payload: `{ content?, components, files?, flags }`. Spread it manually or call `await builder.send(interaction, { ephemeral? })` — it picks `reply` / `editReply` automatically.
+
 ---
 
-## 🧩 Core – Types and Utilities
+## ♻️ Cache-free parsing (the main feature)
 
-The library re‑exports all necessary types from `discord-api-types/v10` and adds its own:
+```ts
+// later, any time:
+const message = await interaction.fetchReply();
 
-- `AnyComponent` – union of all possible component types.
-- `COMPONENTS_V2_FLAG` – constant `32768`.
-- Type Guards: `isButton`, `isSelectMenu`, `isContainer`, `hasCustomId`, `hasContent`, etc.
-- Factory `createEmptyComponent(type)` – creates an empty component of the given type.
+const builder = parseComponents(message); // raw JSON → builder
 
-These can be imported directly:
+builder
+  .replaceText("0 participants", "1 participant")
+  .setButtonLabel("join", "Giveaway closed")
+  .disableButtons(); // disables every button, including section accessory buttons
 
-```typescript
-import { AnyComponent, isButton, COMPONENTS_V2_FLAG } from "@discord-components/v2";
+await builder.send(interaction); // editReply under the hood
 ```
 
----
+`parseComponents()` / `V2Builder.parse()` accepts:
 
-## 🛠️ Builders – Creating Components
+| Input | Example |
+|---|---|
+| raw component array | `[...message.components]` |
+| message-like object | `{ components: [...], content }` (fetched Message works too) |
+| single component | `{ type: 17, components: [...] }` |
+| anything with `.toJSON()` | discord.js builders / component instances |
 
-### ButtonBuilder (button)
+If there is exactly one root and it's a Container, it is absorbed with all metadata (accent color, spoiler, children). Otherwise everything is wrapped into an implicit container so the fluent API keeps working.
 
-```typescript
-const btn = ComponentBuilder.button()
-  .setLabel("Click")
-  .setStyle(ButtonStyle.Primary) // 1
-  .setCustomId("click")
-  .setEmoji({ name: "👍" })
-  .setDisabled(false)
-  .build();
+## 🔧 Editing utilities
+
+### `editComponents(data)` — chainable editor over raw components
+
+```ts
+import { editComponents } from "discordjs-components-v2";
+
+const components = editComponents(await interaction.fetchReply())
+  .disableButtons()              // disable all buttons
+  .enableButtons("open")         // …except one
+  .removeButtons("rules")        // remove the rules button entirely
+  .remove("pick")                // remove any component by customId
+  .keepOnly(/giveaway/i)         // keep only matches (+ their ancestors)
+  .setButtonLabel("join", "Vote")
+  .replaceText("100 coins", "200 coins")
+  .toJSON();
+
+await interaction.editReply({ components, flags: 32768 });
 ```
 
-**Methods:**
+Input data is never mutated — the editor works on a deep copy.
 
-- `setStyle(style: ButtonStyle)`
-- `setLabel(label: string)`
-- `setCustomId(id: string)` – for interactive buttons.
-- `setURL(url: string)` – for link buttons (style automatically set to `Link`).
-- `setSKUId(skuId: string)` – for Premium buttons (style `Premium`).
-- `setEmoji(emoji: { name?, id?, animated? })`
-- `setDisabled(disabled: boolean)`
+Automatic cleanup after removals: empty ActionRows are pruned; a Section without texts or without an accessory is removed entirely (Discord rejects those).
 
----
+### Selectors
 
-### SelectMenuBuilder (dropdown)
+Every search/removal API uses one unified selector:
 
-```typescript
-const select = ComponentBuilder.selectMenu({ customId: "menu" })
-  .setPlaceholder("Choose an option")
-  .setMinValues(1)
-  .setMaxValues(2)
-  .addOption({ label: "Option 1", value: "1" })
-  .addOption({ label: "Option 2", value: "2" })
-  .build();
+- `"my_id"` — exact `custom_id` match
+- `ComponentType.Button` — exact type
+- `/regex/i` — tested against `custom_id`, button labels and TextDisplay content
+- `(c) => boolean` — custom predicate
+
+### Search & info extraction
+
+```ts
+builder.find("join");            // ComponentRef | null — node + path + parent
+builder.findAll(ComponentType.TextDisplay);
+builder.getTexts();              // contents of every text block
+
+findComponents(rawArray, selector); // standalone version
 ```
 
-**Methods:**
-
-- `setCustomId`, `setPlaceholder`, `setMinValues`, `setMaxValues`, `setDisabled`
-- `addOption(option)`, `addOptions(...options)`, `setOptions(options)`
-
----
-
-### Channels, Roles, Mentionables, Users
-
-Similar to SelectMenu, but for specific types:
-
-```typescript
-const channelSelect = ComponentBuilder.channelSelect({ customId: "channels" })
-  .setChannelTypes([0, 2]) // text and voice
-  .build();
-
-const roleSelect = ComponentBuilder.roleSelect({ customId: "roles" }).build();
-const mentionableSelect = ComponentBuilder.mentionableSelect({ customId: "mentions" }).build();
-const userSelect = ComponentBuilder.userSelect({ customId: "users" }).build();
-```
-
----
-
-### TextDisplayBuilder (text block)
-
-```typescript
-const text = ComponentBuilder.textDisplay({ content: "Plain text" }).setContent("New text").build();
-```
-
-Method: `setContent(content: string)`
-
----
-
-### ContainerBuilder (container)
-
-A container can hold any other components inside.
-
-```typescript
-const container = ComponentBuilder.container({ accentColor: 0x00ff00 })
-  .addComponent(ComponentBuilder.textDisplay({ content: "Inside container" }))
-  .addComponent(ComponentBuilder.button().setLabel("Inner button").setCustomId("inner"))
-  .build();
-```
-
-**Methods:**
-
-- `setAccentColor(color: number)`
-- `addComponent(component)`, `addComponents(...components)`, `setComponents(components)`
-
----
-
-### SeparatorBuilder (separator)
-
-Simply a horizontal line.
-
-```typescript
-const sep = ComponentBuilder.separator().build();
-```
-
----
-
-### ActionRowBuilder (action row)
-
-An Action Row can only contain interactive components (buttons and select menus), up to 5.
-
-```typescript
-const row = ComponentBuilder.actionRow().addComponent(btn1).addComponent(select).build();
-```
-
-**Methods:** `addComponent`, `addComponents`, `setComponents`.
-
----
-
-### MessageBuilder (full message)
-
-Builds root components (up to 10) and manages the V2 flag.
-
-```typescript
-const msg = ComponentBuilder.message()
-  .addText("Header")
-  .addContainer(container)
-  .addRow(btn1, btn2)
-  .addSeparator()
-  .setFlags(0) // can add other flags
-  .ensureV2Flag() // ensures flag 32768 is present
-  .build();
-```
-
-**Methods:**
-
-- `addComponent`, `addComponents`, `setComponents`
-- `addRow(...items)` – automatically creates an ActionRow.
-- `addText(content, spoiler?)` – creates a TextDisplay.
-- `addContainer(container)`
-- `addSeparator()`
-- `setFlags(flags)`, `ensureV2Flag()`
-- `build()` – returns `{ components, flags }`.
-
----
-
-### ComponentBuilder (factory)
-
-Static methods for creating any builder:
-
-- `button(options?)`
-- `actionRow()`
-- `container(options?)`
-- `selectMenu(options?)`
-- `channelSelect(options?)`
-- `roleSelect(options?)`
-- `mentionableSelect(options?)`
-- `userSelect(options?)`
-- `textDisplay(options?)`
-- `separator()`
-- `message()`
-
----
-
-## 🔍 Managers – Search and Editing
-
-### BuilderManager
-
-Allows editing existing components (e.g., fetched from `fetchReply`).
-
-```typescript
-import { BuilderManager } from "@discord-components/v2";
-
-const reply = await interaction.fetchReply();
-const manager = new BuilderManager(reply.components);
-
-// Disable all buttons
-manager.disableButtons();
-
-// Change button label
-manager.setButtonLabel("my_button", "New label");
-
-// Replace text in all TextDisplays
-manager.replaceText(/old/g, "new");
-
-// Remove lines containing "start"
-manager.removeLinesContaining("start");
-
-// Get modified components
-const newComponents = manager.toJSON();
-await interaction.editReply({ components: newComponents, flags: 32768 });
-```
-
-**Main methods:**
-
-- `search()` – returns a `ComponentSearcher`.
-- `findByCustomId(customId)` – finds a component with this ID.
-- `findAllByType(type)` – all components of the given type.
-- `findByContent(search)` – searches text in `TextDisplay`.
-- `setButtonLabel`, `setButtonStyle`, `setButtonDisabled`, `disableButtons`
-- `replaceText(search, replacement)`
-- `removeLinesContaining(search)`
-- `removeLines(startIndex, count)`
-- `toJSON()` – returns the final array.
-
-### ComponentSearcher
-
-Used internally by `BuilderManager`, but can be called separately:
-
-```typescript
-const searcher = new ComponentSearcher(components);
-const result = searcher.findByCustomId("my_id");
-if (result) {
-  console.log(result.component, result.path);
-}
-```
-
-**Methods:**
-
-- `findByCustomId(customId)`
-- `findAllByType(type)`
-- `findByContent(search)`
-
-All return `{ component, path: string[] }`, where `path` is an array of indices for access.
-
----
-
-## 🧰 Utils – Helper Functions
-
-### `cloneDeep(obj)`
-
-Deep cloning (uses `structuredClone` if available).
-
-### `mergeComponents(base, ...others)`
-
-Merges multiple component arrays.
-
-### `hasV2Flag(flags)`, `ensureV2Flag(flags)`
-
-Check and set the `32768` flag.
-
-### `parseEmoji(input)`
-
-Parses an emoji string into `{ name?, id?, animated? }`. Supports:
-
-- `😊` → `{ name: "😊" }`
-- `:smile:` → `{ name: "smile" }`
-- `<:name:123456789>` → `{ name: "name", id: "123456789" }`
-- `<a:name:123456789>` → `{ name: "name", id: "123456789", animated: true }`
-
----
+## 🧱 Builder methods
+
+| Method | Purpose |
+|---|---|
+| `.text(md)` | TextDisplay with markdown |
+| `.content(str)` | plain content above components |
+| `.field(name, value, inline?)` | name/value pair |
+| `.fields([...])` | aligned two-column table inside ```ansi``` |
+| `.buttons(...)` | row of ≤5 buttons (`id`/`url`/`skuId`, style as string: `"Primary"`…) |
+| `.selectMenu.string/user/role/mentionable/channel(params)` | select menu in its own row |
+| `.section({ title, content?, thumbnailUrl?, button?, spoiler? })` | Section with thumbnail or button accessory |
+| `.gallery(urls \| items)` | MediaGallery up to 10 images |
+| `.media(buffer, name?)` | attachment + `attachment://…` gallery |
+| `.file(bufferOrPayload, name?, spoiler?)` | File component |
+| `.separator(size?, divider?)` | separator |
+| `.color(hex)` / `.spoiler(bool)` | container accent/spoiler |
+| `.setId(n)` | numeric container id |
+| `.clear()` / `.getAttachments()` | reset state / files |
+
+Editing methods are available right on the builder: `disableButtons`, `enableButtons`, `setDisabled`, `setButtonLabel`, `remove`, `removeButtons`, `keepOnly`, `replaceText`, `find`, `findAll`, `getTexts`.
 
 ## ✅ Validation
 
-Built‑in validation automatically checks:
-
-- Maximum 10 root components.
-- Total number of components (recursively) not exceeding 40.
-- Each component contains required fields.
-- Action Row contains no more than 5 elements and only interactive ones.
-- Button has `custom_id`, `url`, or `sku_id`, and also `label` or `emoji`.
-
-Validation is called on `build()` in `MessageBuilder`, but you can use it separately:
-
-```typescript
-import { validateComponents } from "@discord-components/v2";
-
-const result = validateComponents(components);
-if (!result.valid) {
-  console.error(result.errors);
-}
-```
-
----
-
-## 💡 Full Example Scenario (Giveaway)
-
-```typescript
-import { ComponentBuilder, BuilderManager } from "@discord-components/v2";
-
-// --- Create the message ---
-const message = ComponentBuilder.message()
-  .addText("🎉 **Giveaway**")
-  .addContainer(
-    ComponentBuilder.container({ accentColor: 0xffa500 })
-      .addText("Organizer: <@123456>")
-      .addText("Prize: 100 coins"),
-  )
-  .addRow(
-    ComponentBuilder.button().setLabel("Join").setCustomId("join").setStyle(3), // Success
-    ComponentBuilder.button().setLabel("Close").setCustomId("close").setStyle(4), // Danger
-  )
-  .build();
-
-// Send
-const response = await interaction.editReply({ ...message, flags: message.flags });
-
-// --- After 10 seconds ---
-setTimeout(async () => {
-  const reply = await interaction.fetchReply();
-  const manager = new BuilderManager(reply.components);
-
-  // 1. Remove the line "Prize: 100 coins"
-  manager.removeLinesContaining("Prize: 100 coins");
-
-  // 2. Change the "Join" button label to "Vote"
-  manager.setButtonLabel("join", "Vote");
-
-  // 3. Disable the "Close" button
-  manager.setButtonDisabled("close", true);
-
-  // 4. Add text "Giveaway ended!"
-  const newMessage = ComponentBuilder.message().addText("Giveaway ended!").build();
-
-  // But we can't just replace the message, so we update components:
-  await interaction.editReply({
-    components: manager.toJSON(),
-    flags: 32768,
-  });
-}, 10000);
-```
-
----
+`build()` validates documented Discord limits (≤40 components total, ≤10 container children, ≤3 texts per section, 1–5 components per row, required button fields, etc.) and throws a readable error listing all problems. Standalone: `validateComponents(components)` → `{ valid, errors }`.
 
 ## 📄 License
 
-MIT © (license)[license]
-
----
-
-## 🙋 Support
-
-If you find a bug or want to suggest an improvement, create an Issue on GitHub or a Pull Request.
-
----
-
-**Good luck with Discord Components V2! 🚀**
+MIT
