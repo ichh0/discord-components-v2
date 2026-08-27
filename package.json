@@ -30,16 +30,14 @@
     "prepublishOnly": "npm run build",
     "test": "npm run build && node --test \"src/test/**/*.mjs\""
   },
+  "dependencies": {
+    "discordjs-components-v2": "^2.0.3"
+  },
   "devDependencies": {
     "@types/node": "^20.0.0",
-    "discord.js": "^14.27.0",
-    "discordx": "^11.13.3",
     "typescript": "^5.0.0"
   },
   "peerDependencies": {
     "discord-api-types": ">=0.38.8"
-  },
-  "dependencies": {
-    "discordjs-components-v2": "^2.0.3"
   }
 }
