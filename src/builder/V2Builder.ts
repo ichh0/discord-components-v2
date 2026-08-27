@@ -18,13 +18,19 @@ import { validateComponents } from "../core/validate";
 import {
   disableButtons as opDisableButtons,
   enableButtons as opEnableButtons,
+  getSection as opGetSection,
+  getSections as opGetSections,
   getTextContents,
   keepOnly as opKeepOnly,
   matchesButtonIds,
+  moveSection as opMoveSection,
   removeComponents as opRemoveComponents,
+  removeSection as opRemoveSection,
+  replaceSection as opReplaceSection,
   replaceText as opReplaceText,
   setButtonLabel as opSetButtonLabel,
   setDisabled as opSetDisabled,
+  type SectionRef,
 } from "../edit/operations";
 import type {
   ButtonOptions,
@@ -472,6 +478,38 @@ export class V2Builder {
 
   getTexts(): string[] {
     return getTextContents(this.containerData.components as RawComponent[]);
+  }
+
+  // ------------------------------------------------------------------
+  // Section management
+  // ------------------------------------------------------------------
+
+  /** Returns all top-level Section components with their indices. */
+  getSections(): SectionRef[] {
+    return opGetSections(this.containerData.components as RawComponent[]);
+  }
+
+  /** Returns a single Section by its section-index, or null if not found. */
+  getSection(index: number): SectionRef | null {
+    return opGetSection(this.containerData.components as RawComponent[], index);
+  }
+
+  /** Removes a Section by its section-index. Returns `this` for chaining. */
+  removeSection(index: number): this {
+    opRemoveSection(this.containerData.components as RawComponent[], index);
+    return this;
+  }
+
+  /** Replaces a Section in-place by its section-index. Returns `this` for chaining. */
+  replaceSection(index: number, replacement: RawComponent): this {
+    opReplaceSection(this.containerData.components as RawComponent[], index, replacement);
+    return this;
+  }
+
+  /** Moves a Section from one section-index to another. Returns `this` for chaining. */
+  moveSection(from: number, to: number): this {
+    opMoveSection(this.containerData.components as RawComponent[], from, to);
+    return this;
   }
 
   // ------------------------------------------------------------------

@@ -61,14 +61,19 @@ export { ComponentsEditor, editComponents } from "./edit/editor";
 export {
   disableButtons,
   enableButtons,
+  getSection,
+  getSections,
   getTextContents,
   keepOnly,
+  moveSection,
   removeComponents,
+  removeSection,
+  replaceSection,
   replaceText,
   setButtonLabel,
   setDisabled,
 } from "./edit/operations";
-export type { DisableOptions, RemoveOptions } from "./edit/operations";
+export type { DisableOptions, RemoveOptions, SectionRef } from "./edit/operations";
 
 // Convenience re-exports of raw API types consumers commonly need
 export type {

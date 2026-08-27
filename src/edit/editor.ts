@@ -6,13 +6,19 @@ import { findComponent, findComponents, walkComponents, type ComponentRef } from
 import {
   disableButtons,
   enableButtons,
+  getSection as opGetSection,
+  getSections as opGetSections,
   getTextContents,
   keepOnly,
   matchesButtonIds,
+  moveSection as opMoveSection,
   removeComponents,
+  removeSection as opRemoveSection,
+  replaceSection as opReplaceSection,
   replaceText,
   setButtonLabel,
   setDisabled,
+  type SectionRef,
 } from "./operations";
 
 /**
@@ -114,6 +120,38 @@ export class ComponentsEditor {
   /** All TextDisplay contents. */
   getTexts(): string[] {
     return getTextContents(this.roots);
+  }
+
+  // ------------------------------------------------------------------
+  // Section management
+  // ------------------------------------------------------------------
+
+  /** Returns all top-level Section components with their indices. */
+  getSections(): SectionRef[] {
+    return opGetSections(this.roots);
+  }
+
+  /** Returns a single Section by its section-index, or null if not found. */
+  getSection(index: number): SectionRef | null {
+    return opGetSection(this.roots, index);
+  }
+
+  /** Removes a Section by its section-index. Returns true if removed. */
+  removeSection(index: number): this {
+    opRemoveSection(this.roots, index);
+    return this;
+  }
+
+  /** Replaces a Section in-place by its section-index. Returns true if replaced. */
+  replaceSection(index: number, replacement: RawComponent): this {
+    opReplaceSection(this.roots, index, replacement);
+    return this;
+  }
+
+  /** Moves a Section from one section-index to another. Returns true if moved. */
+  moveSection(from: number, to: number): this {
+    opMoveSection(this.roots, from, to);
+    return this;
   }
 
   /** Iterates every node in the tree. */

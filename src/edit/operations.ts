@@ -343,3 +343,113 @@ function removeFromParent(ref: InternalRef, roots: RawComponent[]): void {
     if (i !== -1) siblings.splice(i, 1);
   }
 }
+
+// ---------------------------------------------------------------------------
+// Section management
+// ---------------------------------------------------------------------------
+
+export interface SectionRef {
+  /** Index among sections only (0-based). */
+  index: number;
+  /** The raw Section component. */
+  component: RawComponent;
+  /** Index within the container's components array. */
+  containerIndex: number;
+}
+
+/**
+ * Resolves the children array to operate on.
+ * If the first element is a Container, returns its `components` children.
+ * Otherwise returns the array itself (it is already a children list).
+ */
+function resolveChildren(roots: RawComponent[]): RawComponent[] {
+  if (roots.length === 1 && isContainerNode(roots[0])) {
+    return getChildren(roots[0]) ?? [];
+  }
+  return roots;
+}
+
+function collectSections(roots: RawComponent[]): SectionRef[] {
+  const children = resolveChildren(roots);
+  const sections: SectionRef[] = [];
+  let sectionIndex = 0;
+  for (let i = 0; i < children.length; i++) {
+    if (isSection(children[i])) {
+      sections.push({
+        index: sectionIndex++,
+        component: children[i],
+        containerIndex: i,
+      });
+    }
+  }
+  return sections;
+}
+
+/** Returns all top-level Section components with their indices. */
+export function getSections(roots: RawComponent[]): SectionRef[] {
+  return collectSections(roots);
+}
+
+/** Returns a single Section by its section-index, or null if not found. */
+export function getSection(roots: RawComponent[], index: number): SectionRef | null {
+  const sections = collectSections(roots);
+  return sections[index] ?? null;
+}
+
+/** Removes a Section by its section-index. Returns true if removed. */
+export function removeSection(roots: RawComponent[], index: number): boolean {
+  const children = resolveChildren(roots);
+  const sections = collectSections(roots);
+  const target = sections[index];
+  if (!target) return false;
+  children.splice(target.containerIndex, 1);
+  return true;
+}
+
+/**
+ * Replaces a Section in-place by its section-index.
+ * Returns true if replaced.
+ */
+export function replaceSection(
+  roots: RawComponent[],
+  index: number,
+  replacement: RawComponent,
+): boolean {
+  const children = resolveChildren(roots);
+  const sections = collectSections(roots);
+  const target = sections[index];
+  if (!target) return false;
+  children[target.containerIndex] = replacement;
+  return true;
+}
+
+/** Moves a Section from one section-index to another. Returns true if moved. */
+export function moveSection(roots: RawComponent[], from: number, to: number): boolean {
+  const children = resolveChildren(roots);
+  const sections = collectSections(roots);
+  const fromSection = sections[from];
+  if (!fromSection) return false;
+
+  const [removed] = children.splice(fromSection.containerIndex, 1);
+
+  if (to >= sections.length - 1) {
+    // Moving past the end — insert at the end of the array
+    children.push(removed);
+  } else {
+    // Find the new target position after the splice
+    let insertIndex = 0;
+    let sectionCount = 0;
+    for (let i = 0; i < children.length; i++) {
+      if (isSection(children[i])) {
+        if (sectionCount === to) {
+          insertIndex = i;
+          break;
+        }
+        sectionCount++;
+      }
+    }
+    children.splice(insertIndex, 0, removed);
+  }
+
+  return true;
+}

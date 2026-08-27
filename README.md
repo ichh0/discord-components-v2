@@ -157,6 +157,61 @@ findComponents(rawArray, selector); // standalone-версия
 
 Методы редактирования доступны прямо на билдере: `disableButtons`, `enableButtons`, `setDisabled`, `setButtonLabel`, `remove`, `removeButtons`, `keepOnly`, `replaceText`, `find`, `findAll`, `getTexts`.
 
+## 🧩 Управление секциями
+
+`V2Builder` и `ComponentsEditor` позволяют гибко управлять секциями (`Section`) внутри контейнера по их индексу. Это удобно, когда в одном компоненте несколько секций, разделённых сепараторами: можно удалить, заменить или переставить любую из них.
+
+| Метод | Описание |
+|---|---|
+| `.getSections()` | список всех секций: `SectionRef[]` (`{ index, component, containerIndex }`) |
+| `.getSection(index)` | одна секция по индексу или `null` |
+| `.removeSection(index)` | удалить секцию по индексу (возвращает `this` для чейнинга) |
+| `.replaceSection(index, replacement)` | заменить секцию на новую in-place |
+| `.moveSection(from, to)` | переместить секцию из одной позиции в другую |
+
+```ts
+const builder = V2Builder.parse(message);
+
+// Сколько секций в компоненте?
+const sections = builder.getSections(); // [{ index: 0, component, containerIndex: 2 }, ...]
+
+// Удалить вторую секцию
+builder.removeSection(1);
+
+// Заменить первую секцию целиком
+builder.replaceSection(0, {
+  type: ComponentType.Section,
+  components: [{ type: ComponentType.TextDisplay, content: "**Новый заголовок**\nНовый контент" }],
+  accessory: { type: ComponentType.Thumbnail, media: { url: "https://example.com/img.png" } },
+});
+
+// Переместить последнюю секцию наверх
+builder.moveSection(2, 0);
+
+// Чейнинг: убрать одну секцию и переставить оставшиеся
+builder.removeSection(1).moveSection(0, 1);
+
+await builder.send(interaction);
+```
+
+Те же операции доступны через `ComponentsEditor`:
+
+```ts
+editComponents(message)
+  .removeSection(0)
+  .getSections();
+```
+
+А также как standalone-функции над сырым массивом детей контейнера (`getSections`, `getSection`, `removeSection`, `replaceSection`, `moveSection`) — автоматом раскрывают корневой контейнер:
+
+```ts
+import { getSections, removeSection, moveSection } from "discordjs-components-v2";
+
+const sections = getSections(container.components); // [SectionRef]
+removeSection(container.components, 1);
+moveSection(container.components, 2, 0);
+```
+
 ## ✅ Валидация
 
 `build()` проверяет документированные лимиты Discord (≤40 компонентов всего, ≤10 детей контейнера, ≤3 текстов в секции, 1–5 компонентов в ряду, обязательные поля кнопок и т.д.) и кидает понятную ошибку со списком проблем. Отдельно: `validateComponents(components)` → `{ valid, errors }`.

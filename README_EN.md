@@ -153,6 +153,61 @@ findComponents(rawArray, selector); // standalone version
 
 Editing methods are available right on the builder: `disableButtons`, `enableButtons`, `setDisabled`, `setButtonLabel`, `remove`, `removeButtons`, `keepOnly`, `replaceText`, `find`, `findAll`, `getTexts`.
 
+## 🧩 Section management
+
+`V2Builder` and `ComponentsEditor` let you flexibly manage `Section` components inside the container by their index. Handy when a single component has several sections separated by separators: remove, replace or reorder any of them.
+
+| Method | Purpose |
+|---|---|
+| `.getSections()` | list every section: `SectionRef[]` (`{ index, component, containerIndex }`) |
+| `.getSection(index)` | one section by index, or `null` |
+| `.removeSection(index)` | remove the section at index (returns `this` for chaining) |
+| `.replaceSection(index, replacement)` | replace the section in-place |
+| `.moveSection(from, to)` | move a section from one position to another |
+
+```ts
+const builder = V2Builder.parse(message);
+
+// How many sections are there?
+const sections = builder.getSections(); // [{ index: 0, component, containerIndex: 2 }, ...]
+
+// Remove the second section
+builder.removeSection(1);
+
+// Replace the first section entirely
+builder.replaceSection(0, {
+  type: ComponentType.Section,
+  components: [{ type: ComponentType.TextDisplay, content: "**New title**\nNew content" }],
+  accessory: { type: ComponentType.Thumbnail, media: { url: "https://example.com/img.png" } },
+});
+
+// Move the last section to the top
+builder.moveSection(2, 0);
+
+// Chaining: drop one section and reorder the rest
+builder.removeSection(1).moveSection(0, 1);
+
+await builder.send(interaction);
+```
+
+The same operations are available through `ComponentsEditor`:
+
+```ts
+editComponents(message)
+  .removeSection(0)
+  .getSections();
+```
+
+And as standalone functions over a raw container-children array (`getSections`, `getSection`, `removeSection`, `replaceSection`, `moveSection`) — these auto-expand a root container:
+
+```ts
+import { getSections, removeSection, moveSection } from "discordjs-components-v2";
+
+const sections = getSections(container.components); // [SectionRef]
+removeSection(container.components, 1);
+moveSection(container.components, 2, 0);
+```
+
 ## ✅ Validation
 
 `build()` validates documented Discord limits (≤40 components total, ≤10 container children, ≤3 texts per section, 1–5 components per row, required button fields, etc.) and throws a readable error listing all problems. Standalone: `validateComponents(components)` → `{ valid, errors }`.

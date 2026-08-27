@@ -8,6 +8,11 @@ import {
   ComponentType,
   findComponents,
   validateComponents,
+  getSections,
+  getSection,
+  removeSection,
+  replaceSection,
+  moveSection,
 } from "../../dist/index.js";
 
 const CONTAINER = ComponentType.Container;
@@ -368,6 +373,179 @@ test("send picks reply vs editReply", async () => {
   await new V2Builder().text("hi").send(interactionLike, { ephemeral: true });
   assert.equal(calls[0][0], "editReply");
   assert.equal(calls[0][1].flags & 64, 64);
+});
+
+// ------------------------------------------------------------------
+// Section management tests
+// ------------------------------------------------------------------
+
+function makeSectionsBuilder() {
+  return new V2Builder()
+    .text("Header")
+    .separator()
+    .section({ title: "First", content: "Content 1", thumbnailUrl: "https://x/1.png" })
+    .separator()
+    .section({ title: "Second", content: "Content 2", button: { id: "btn2", label: "B2" } })
+    .separator()
+    .section({ title: "Third", content: "Content 3", thumbnailUrl: "https://x/3.png" })
+    .buttons({ id: "final", label: "Final" });
+}
+
+test("getSections: returns all sections with correct indices", () => {
+  const builder = makeSectionsBuilder();
+  const sections = builder.getSections();
+  assert.equal(sections.length, 3);
+  assert.equal(sections[0].index, 0);
+  assert.equal(sections[1].index, 1);
+  assert.equal(sections[2].index, 2);
+  assert.equal(sections[0].component.type, ComponentType.Section);
+  assert.equal(sections[1].component.type, ComponentType.Section);
+  assert.equal(sections[2].component.type, ComponentType.Section);
+});
+
+test("getSections: containerIndex reflects position in container array", () => {
+  const builder = makeSectionsBuilder();
+  const sections = builder.getSections();
+  // container: [text(0), sep(1), section(2), sep(3), section(4), sep(5), section(6), row(7)]
+  assert.equal(sections[0].containerIndex, 2);
+  assert.equal(sections[1].containerIndex, 4);
+  assert.equal(sections[2].containerIndex, 6);
+});
+
+test("getSection: returns specific section by index", () => {
+  const builder = makeSectionsBuilder();
+  const s = builder.getSection(1);
+  assert.ok(s);
+  assert.equal(s.index, 1);
+  // Second section has the button accessory
+  assert.equal(s.component.accessory.custom_id, "btn2");
+});
+
+test("getSection: returns null for out-of-bounds", () => {
+  const builder = makeSectionsBuilder();
+  assert.equal(builder.getSection(5), null);
+  assert.equal(builder.getSection(-1), null);
+  assert.equal(builder.getSection(NaN), null);
+});
+
+test("removeSection: removes section by index", () => {
+  const builder = makeSectionsBuilder();
+  const removed = builder.removeSection(1);
+  assert.ok(removed);
+  const sections = builder.getSections();
+  assert.equal(sections.length, 2);
+  // First and third remain
+  assert.equal(sections[0].component.accessory.type, ComponentType.Thumbnail);
+  assert.equal(sections[1].component.accessory.type, ComponentType.Thumbnail);
+});
+
+test("removeSection: returns false for out-of-bounds", () => {
+  const builder = makeSectionsBuilder();
+  // V2Builder.removeSection returns this (for chaining), but nothing changes
+  builder.removeSection(10);
+  assert.equal(builder.getSections().length, 3);
+});
+
+test("removeSection: via ComponentsEditor", () => {
+  const raw = makeSectionsBuilder().toJSON();
+  const editor = editComponents(raw);
+  editor.removeSection(0);
+  const sections = editor.getSections();
+  assert.equal(sections.length, 2);
+  // The first remaining section should be the one originally at index 1 (btn2)
+  assert.equal(sections[0].component.accessory.custom_id, "btn2");
+});
+
+test("replaceSection: replaces section in-place", () => {
+  const builder = makeSectionsBuilder();
+  const newSection = {
+    type: ComponentType.Section,
+    components: [{ type: ComponentType.TextDisplay, content: "**Replaced**\nNew content" }],
+    accessory: { type: ComponentType.Thumbnail, media: { url: "https://x/new.png" } },
+  };
+  const replaced = builder.replaceSection(0, newSection);
+  assert.ok(replaced);
+  const sections = builder.getSections();
+  assert.equal(sections.length, 3);
+  // First section replaced
+  assert.ok(sections[0].component.components[0].content.includes("Replaced"));
+  // Others untouched
+  assert.equal(sections[1].component.accessory.custom_id, "btn2");
+});
+
+test("replaceSection: returns false for out-of-bounds", () => {
+  const builder = makeSectionsBuilder();
+  const newSection = { type: ComponentType.Section, components: [], accessory: null };
+  // V2Builder.replaceSection returns this (for chaining)
+  builder.replaceSection(10, newSection);
+  // Nothing changed — still 3 sections
+  assert.equal(builder.getSections().length, 3);
+});
+
+test("moveSection: reorders sections", () => {
+  const builder = makeSectionsBuilder();
+  const moved = builder.moveSection(2, 0);
+  assert.ok(moved);
+  const sections = builder.getSections();
+  assert.equal(sections.length, 3);
+  // Third section is now first
+  assert.equal(sections[0].component.components[0].content.includes("Third"), true);
+  // First section is now second
+  assert.equal(sections[1].component.components[0].content.includes("First"), true);
+  // Second stays
+  assert.equal(sections[2].component.components[0].content.includes("Second"), true);
+});
+
+test("moveSection: moving to end", () => {
+  const builder = makeSectionsBuilder();
+  builder.moveSection(0, 5);
+  const sections = builder.getSections();
+  assert.equal(sections.length, 3);
+  // Original first is now last
+  assert.equal(sections[2].component.components[0].content.includes("First"), true);
+});
+
+test("moveSection: returns false when from is out-of-bounds", () => {
+  const builder = makeSectionsBuilder();
+  // V2Builder.moveSection returns this (for chaining)
+  builder.moveSection(10, 0);
+  // Nothing changed
+  assert.equal(builder.getSections().length, 3);
+});
+
+test("section management: chaining works", () => {
+  const builder = makeSectionsBuilder()
+    .removeSection(1)
+    .moveSection(0, 1);
+  const sections = builder.getSections();
+  assert.equal(sections.length, 2);
+  // removeSection(1) → removes Second; remaining: [First, Third]
+  // moveSection(0, 1) → moves First after Third; result: [Third, First]
+  assert.equal(sections[0].component.components[0].content.includes("Third"), true);
+  assert.equal(sections[1].component.components[0].content.includes("First"), true);
+});
+
+test("section management: parse then manipulate", () => {
+  const original = makeSectionsBuilder().build();
+  const parsed = parseComponents(original);
+  parsed.removeSection(0);
+  const rebuilt = parsed.build();
+  const sections = getSections(rebuilt.components[0].components);
+  assert.equal(sections.length, 2);
+});
+
+test("section management: standalone functions work on raw arrays", () => {
+  const raw = makeSectionsBuilder().toJSON();
+  const container = raw; // root is the container
+  const sections = getSections(container.components);
+  assert.equal(sections.length, 3);
+
+  removeSection(container.components, 1);
+  assert.equal(getSections(container.components).length, 2);
+
+  moveSection(container.components, 0, 1);
+  const after = getSections(container.components);
+  assert.equal(after[0].component.components[0].content.includes("Third"), true);
 });
 
 // ------------------------------------------------------------------
