@@ -1,6 +1,6 @@
 {
   "name": "discordjs-components-v2",
-  "version": "2.0.6",
+  "version": "2.0.7",
   "description": "Lossless builder + parser + editing utilities for Discord Components V2. No caches needed.",
   "keywords": [
     "builder",
