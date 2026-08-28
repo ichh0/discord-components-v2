@@ -109,6 +109,26 @@ export class V2Builder {
    *   which the Discord API rejects.
    */
   constructor(data?: Partial<APIContainerComponent> | readonly unknown[]) {
+    // Absorb a single Container from an array (e.g. fr.components → [container])
+    // just like parse() does, to avoid wrapping it in another Container.
+    if (
+      Array.isArray(data) &&
+      data.length === 1 &&
+      isContainer(data[0] as RawComponent)
+    ) {
+      const c = JSON.parse(JSON.stringify(data[0])) as APIContainerComponent;
+      this.containerData = {
+        type: ComponentType.Container,
+        components: c.components ?? [],
+      };
+      if (typeof c.id === "number") this.containerData.id = c.id;
+      if (c.accent_color !== undefined && c.accent_color !== null) {
+        this.containerData.accent_color = c.accent_color;
+      }
+      if (typeof c.spoiler === "boolean") this.containerData.spoiler = c.spoiler;
+      return;
+    }
+
     const source: Partial<APIContainerComponent> = Array.isArray(data)
       ? { components: data as APIContainerComponent["components"] }
       : { ...((data as Partial<APIContainerComponent> | undefined) ?? {}) };

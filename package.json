@@ -31,7 +31,7 @@
     "test": "npm run build && node --test \"src/test/**/*.mjs\""
   },
   "dependencies": {
-    "discordjs-components-v2": "^2.0.3"
+    "discordjs-components-v2": "^2.0.4"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
