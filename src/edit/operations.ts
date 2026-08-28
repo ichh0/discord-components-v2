@@ -6,7 +6,9 @@ import {
   isButton,
   isContainer as isContainerNode,
   isInteractive,
+  isMediaGallery,
   isSection,
+  isSeparator,
   isTextDisplay,
 } from "../core/guards";
 import { findComponents, walkComponents, type ComponentRef } from "../core/walk";
@@ -345,17 +347,32 @@ function removeFromParent(ref: InternalRef, roots: RawComponent[]): void {
 }
 
 // ---------------------------------------------------------------------------
-// Section management
+// Indexed container-child management
+// (Sections, Separators, TextDisplays, MediaGalleries, ActionRows)
 // ---------------------------------------------------------------------------
 
-export interface SectionRef {
-  /** Index among sections only (0-based). */
+/**
+ * Position of one container child among the siblings of the same kind.
+ * Each component kind (sections, separators, text blocks, ...) gets its own
+ * zero-based `index`, plus the raw slot (`containerIndex`) inside the
+ * container's `components` array.
+ */
+export interface IndexedChildRef {
+  /** Index among children of the same kind only (0-based). */
   index: number;
-  /** The raw Section component. */
+  /** The raw component. */
   component: RawComponent;
   /** Index within the container's components array. */
   containerIndex: number;
 }
+
+export interface SectionRef extends IndexedChildRef {}
+export interface SeparatorRef extends IndexedChildRef {}
+export interface TextDisplayRef extends IndexedChildRef {}
+export interface MediaGalleryRef extends IndexedChildRef {}
+export interface ActionRowRef extends IndexedChildRef {}
+
+type ChildPredicate = (c: RawComponent) => boolean;
 
 /**
  * Resolves the children array to operate on.
@@ -369,41 +386,110 @@ function resolveChildren(roots: RawComponent[]): RawComponent[] {
   return roots;
 }
 
-function collectSections(roots: RawComponent[]): SectionRef[] {
+function collectChildren(
+  roots: RawComponent[],
+  isTarget: ChildPredicate,
+): { children: RawComponent[]; matches: IndexedChildRef[] } {
   const children = resolveChildren(roots);
-  const sections: SectionRef[] = [];
-  let sectionIndex = 0;
+  const matches: IndexedChildRef[] = [];
+  let kindIndex = 0;
   for (let i = 0; i < children.length; i++) {
-    if (isSection(children[i])) {
-      sections.push({
-        index: sectionIndex++,
+    if (isTarget(children[i])) {
+      matches.push({
+        index: kindIndex++,
         component: children[i],
         containerIndex: i,
       });
     }
   }
-  return sections;
+  return { children, matches };
 }
+
+function getChildRef(
+  roots: RawComponent[],
+  isTarget: ChildPredicate,
+  index: number,
+): IndexedChildRef | null {
+  const { matches } = collectChildren(roots, isTarget);
+  return matches[index] ?? null;
+}
+
+function removeChildAt(
+  roots: RawComponent[],
+  isTarget: ChildPredicate,
+  index: number,
+): boolean {
+  const { children, matches } = collectChildren(roots, isTarget);
+  const target = matches[index];
+  if (!target) return false;
+  children.splice(target.containerIndex, 1);
+  return true;
+}
+
+function replaceChildAt(
+  roots: RawComponent[],
+  isTarget: ChildPredicate,
+  index: number,
+  replacement: RawComponent,
+): boolean {
+  const { children, matches } = collectChildren(roots, isTarget);
+  const target = matches[index];
+  if (!target) return false;
+  children[target.containerIndex] = replacement;
+  return true;
+}
+
+function moveChildAt(
+  roots: RawComponent[],
+  isTarget: ChildPredicate,
+  from: number,
+  to: number,
+): boolean {
+  const { children, matches } = collectChildren(roots, isTarget);
+  const fromMatch = matches[from];
+  if (!fromMatch) return false;
+
+  const [removed] = children.splice(fromMatch.containerIndex, 1);
+
+  if (to >= matches.length - 1) {
+    // Moving past the end — insert at the end of the array
+    children.push(removed);
+  } else {
+    // Find the new target position after the splice
+    let insertIndex = 0;
+    let kindCount = 0;
+    for (let i = 0; i < children.length; i++) {
+      if (isTarget(children[i])) {
+        if (kindCount === to) {
+          insertIndex = i;
+          break;
+        }
+        kindCount++;
+      }
+    }
+    children.splice(insertIndex, 0, removed);
+  }
+
+  return true;
+}
+
+// --- Sections ---------------------------------------------------------------
+
+const isSectionChild: ChildPredicate = (c) => isSection(c);
 
 /** Returns all top-level Section components with their indices. */
 export function getSections(roots: RawComponent[]): SectionRef[] {
-  return collectSections(roots);
+  return collectChildren(roots, isSectionChild).matches as SectionRef[];
 }
 
 /** Returns a single Section by its section-index, or null if not found. */
 export function getSection(roots: RawComponent[], index: number): SectionRef | null {
-  const sections = collectSections(roots);
-  return sections[index] ?? null;
+  return getChildRef(roots, isSectionChild, index) as SectionRef | null;
 }
 
 /** Removes a Section by its section-index. Returns true if removed. */
 export function removeSection(roots: RawComponent[], index: number): boolean {
-  const children = resolveChildren(roots);
-  const sections = collectSections(roots);
-  const target = sections[index];
-  if (!target) return false;
-  children.splice(target.containerIndex, 1);
-  return true;
+  return removeChildAt(roots, isSectionChild, index);
 }
 
 /**
@@ -415,41 +501,142 @@ export function replaceSection(
   index: number,
   replacement: RawComponent,
 ): boolean {
-  const children = resolveChildren(roots);
-  const sections = collectSections(roots);
-  const target = sections[index];
-  if (!target) return false;
-  children[target.containerIndex] = replacement;
-  return true;
+  return replaceChildAt(roots, isSectionChild, index, replacement);
 }
 
 /** Moves a Section from one section-index to another. Returns true if moved. */
 export function moveSection(roots: RawComponent[], from: number, to: number): boolean {
-  const children = resolveChildren(roots);
-  const sections = collectSections(roots);
-  const fromSection = sections[from];
-  if (!fromSection) return false;
+  return moveChildAt(roots, isSectionChild, from, to);
+}
 
-  const [removed] = children.splice(fromSection.containerIndex, 1);
+// --- Separators -------------------------------------------------------------
 
-  if (to >= sections.length - 1) {
-    // Moving past the end — insert at the end of the array
-    children.push(removed);
-  } else {
-    // Find the new target position after the splice
-    let insertIndex = 0;
-    let sectionCount = 0;
-    for (let i = 0; i < children.length; i++) {
-      if (isSection(children[i])) {
-        if (sectionCount === to) {
-          insertIndex = i;
-          break;
-        }
-        sectionCount++;
-      }
-    }
-    children.splice(insertIndex, 0, removed);
-  }
+const isSeparatorChild: ChildPredicate = (c) => isSeparator(c);
 
-  return true;
+/** Returns all top-level Separator components with their indices. */
+export function getSeparators(roots: RawComponent[]): SeparatorRef[] {
+  return collectChildren(roots, isSeparatorChild).matches as SeparatorRef[];
+}
+
+/** Returns a single Separator by its separator-index, or null if not found. */
+export function getSeparator(roots: RawComponent[], index: number): SeparatorRef | null {
+  return getChildRef(roots, isSeparatorChild, index) as SeparatorRef | null;
+}
+
+/** Removes a Separator by its separator-index. Returns true if removed. */
+export function removeSeparator(roots: RawComponent[], index: number): boolean {
+  return removeChildAt(roots, isSeparatorChild, index);
+}
+
+/** Replaces a Separator in-place by its separator-index. Returns true if replaced. */
+export function replaceSeparator(
+  roots: RawComponent[],
+  index: number,
+  replacement: RawComponent,
+): boolean {
+  return replaceChildAt(roots, isSeparatorChild, index, replacement);
+}
+
+/** Moves a Separator from one separator-index to another. Returns true if moved. */
+export function moveSeparator(roots: RawComponent[], from: number, to: number): boolean {
+  return moveChildAt(roots, isSeparatorChild, from, to);
+}
+
+// --- TextDisplays -----------------------------------------------------------
+
+const isTextDisplayChild: ChildPredicate = (c) => isTextDisplay(c);
+
+/** Returns all top-level TextDisplay components with their indices. */
+export function getTextDisplays(roots: RawComponent[]): TextDisplayRef[] {
+  return collectChildren(roots, isTextDisplayChild).matches as TextDisplayRef[];
+}
+
+/** Returns a single TextDisplay by its index, or null if not found. */
+export function getTextDisplay(roots: RawComponent[], index: number): TextDisplayRef | null {
+  return getChildRef(roots, isTextDisplayChild, index) as TextDisplayRef | null;
+}
+
+/** Removes a TextDisplay by its index. Returns true if removed. */
+export function removeTextDisplay(roots: RawComponent[], index: number): boolean {
+  return removeChildAt(roots, isTextDisplayChild, index);
+}
+
+/** Replaces a TextDisplay in-place by its index. Returns true if replaced. */
+export function replaceTextDisplay(
+  roots: RawComponent[],
+  index: number,
+  replacement: RawComponent,
+): boolean {
+  return replaceChildAt(roots, isTextDisplayChild, index, replacement);
+}
+
+/** Moves a TextDisplay from one index to another. Returns true if moved. */
+export function moveTextDisplay(roots: RawComponent[], from: number, to: number): boolean {
+  return moveChildAt(roots, isTextDisplayChild, from, to);
+}
+
+// --- MediaGalleries ---------------------------------------------------------
+
+const isMediaGalleryChild: ChildPredicate = (c) => isMediaGallery(c);
+
+/** Returns all top-level MediaGallery components with their indices. */
+export function getMediaGalleries(roots: RawComponent[]): MediaGalleryRef[] {
+  return collectChildren(roots, isMediaGalleryChild).matches as MediaGalleryRef[];
+}
+
+/** Returns a single MediaGallery by its index, or null if not found. */
+export function getMediaGallery(roots: RawComponent[], index: number): MediaGalleryRef | null {
+  return getChildRef(roots, isMediaGalleryChild, index) as MediaGalleryRef | null;
+}
+
+/** Removes a MediaGallery by its index. Returns true if removed. */
+export function removeMediaGallery(roots: RawComponent[], index: number): boolean {
+  return removeChildAt(roots, isMediaGalleryChild, index);
+}
+
+/** Replaces a MediaGallery in-place by its index. Returns true if replaced. */
+export function replaceMediaGallery(
+  roots: RawComponent[],
+  index: number,
+  replacement: RawComponent,
+): boolean {
+  return replaceChildAt(roots, isMediaGalleryChild, index, replacement);
+}
+
+/** Moves a MediaGallery from one index to another. Returns true if moved. */
+export function moveMediaGallery(roots: RawComponent[], from: number, to: number): boolean {
+  return moveChildAt(roots, isMediaGalleryChild, from, to);
+}
+
+// --- ActionRows -------------------------------------------------------------
+
+const isActionRowChild: ChildPredicate = (c) => isActionRow(c);
+
+/** Returns all top-level ActionRow components with their indices. */
+export function getActionRows(roots: RawComponent[]): ActionRowRef[] {
+  return collectChildren(roots, isActionRowChild).matches as ActionRowRef[];
+}
+
+/** Returns a single ActionRow by its index, or null if not found. */
+export function getActionRow(roots: RawComponent[], index: number): ActionRowRef | null {
+  return getChildRef(roots, isActionRowChild, index) as ActionRowRef | null;
+}
+
+/** Removes an ActionRow by its index. Returns true if removed. */
+export function removeActionRow(roots: RawComponent[], index: number): boolean {
+  return removeChildAt(roots, isActionRowChild, index);
+}
+
+/** Replaces an ActionRow in-place by its index. Returns true if replaced. */
+export function replaceActionRow(
+  roots: RawComponent[],
+  index: number,
+  replacement: RawComponent,
+): boolean {
+  return replaceChildAt(roots, isActionRowChild, index, replacement);
+}
+
+/** Moves an ActionRow from one index to another. Returns true if moved. */
+export function moveActionRow(roots: RawComponent[], from: number, to: number): boolean {
+  return moveChildAt(roots, isActionRowChild, from, to);
 }

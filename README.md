@@ -157,17 +157,24 @@ findComponents(rawArray, selector); // standalone-версия
 
 Методы редактирования доступны прямо на билдере: `disableButtons`, `enableButtons`, `setDisabled`, `setButtonLabel`, `remove`, `removeButtons`, `keepOnly`, `replaceText`, `find`, `findAll`, `getTexts`.
 
-## 🧩 Управление секциями
+## 🧩 Управление секциями и layout-компонентами
 
-`V2Builder` и `ComponentsEditor` позволяют гибко управлять секциями (`Section`) внутри контейнера по их индексу. Это удобно, когда в одном компоненте несколько секций, разделённых сепараторами: можно удалить, заменить или переставить любую из них.
+`V2Builder` и `ComponentsEditor` позволяют гибко управлять компонентами внутри контейнера по их индексу: секциями (`Section`), разделителями (`Separator`), текстовыми блоками (`TextDisplay`), галереями (`MediaGallery`) и рядами (`ActionRow`). Каждый тип индексируется отдельно (считаются только компоненты своего типа), можно удалить, заменить или переставить любой из них.
 
 | Метод | Описание |
 |---|---|
-| `.getSections()` | список всех секций: `SectionRef[]` (`{ index, component, containerIndex }`) |
-| `.getSection(index)` | одна секция по индексу или `null` |
-| `.removeSection(index)` | удалить секцию по индексу (возвращает `this` для чейнинга) |
-| `.replaceSection(index, replacement)` | заменить секцию на новую in-place |
-| `.moveSection(from, to)` | переместить секцию из одной позиции в другую |
+| `.getSections()` · `.getSection(i)` | список / одна секция: `{ index, component, containerIndex }` |
+| `.removeSection(i)` · `.replaceSection(i, r)` · `.moveSection(from, to)` | удалить / заменить / переместить секцию |
+| `.getSeparators()` · `.getSeparator(i)` | список / один разделитель |
+| `.removeSeparator(i)` · `.replaceSeparator(i, r)` · `.moveSeparator(from, to)` | удалить / заменить / переместить разделитель |
+| `.getTextDisplays()` · `.getTextDisplay(i)` | список / один текстовый блок |
+| `.removeTextDisplay(i)` · `.replaceTextDisplay(i, r)` · `.moveTextDisplay(from, to)` | удалить / заменить / переместить текстовый блок |
+| `.getMediaGalleries()` · `.getMediaGallery(i)` | список / одна галерея |
+| `.removeMediaGallery(i)` · `.replaceMediaGallery(i, r)` · `.moveMediaGallery(from, to)` | удалить / заменить / переместить галерею |
+| `.getActionRows()` · `.getActionRow(i)` | список / один ряд |
+| `.removeActionRow(i)` · `.replaceActionRow(i, r)` · `.moveActionRow(from, to)` | удалить / заменить / переместить ряд |
+
+Все *remove/replace/move* методы возвращают `this` для чейнинга.
 
 ```ts
 const builder = V2Builder.parse(message);
@@ -175,8 +182,14 @@ const builder = V2Builder.parse(message);
 // Сколько секций в компоненте?
 const sections = builder.getSections(); // [{ index: 0, component, containerIndex: 2 }, ...]
 
-// Удалить вторую секцию
-builder.removeSection(1);
+// Удалить второй разделитель
+builder.removeSeparator(1);
+
+// Убрать все разделители между секциями
+while (builder.getSeparators().length) builder.removeSeparator(0);
+
+// Удалить один текстовый блок
+builder.removeTextDisplay(0);
 
 // Заменить первую секцию целиком
 builder.replaceSection(0, {
@@ -198,18 +211,19 @@ await builder.send(interaction);
 
 ```ts
 editComponents(message)
-  .removeSection(0)
+  .removeSeparator(1)
+  .removeTextDisplay(0)
   .getSections();
 ```
 
-А также как standalone-функции над сырым массивом детей контейнера (`getSections`, `getSection`, `removeSection`, `replaceSection`, `moveSection`) — автоматом раскрывают корневой контейнер:
+А также как standalone-функции над сырым массивом детей контейнера (`getSections`, `getSection`, `removeSection`, `replaceSection`, `moveSection`, `getSeparators`, `getSeparator`, `removeSeparator`, `replaceSeparator`, `moveSeparator`, …) — автоматом раскрывают корневой контейнер:
 
 ```ts
-import { getSections, removeSection, moveSection } from "discordjs-components-v2";
+import { getSeparators, removeSeparator, moveSeparator } from "discordjs-components-v2";
 
-const sections = getSections(container.components); // [SectionRef]
-removeSection(container.components, 1);
-moveSection(container.components, 2, 0);
+const seps = getSeparators(container.components); // [SeparatorRef]
+removeSeparator(container.components, 1);
+moveSeparator(container.components, 2, 0);
 ```
 
 ## ✅ Валидация

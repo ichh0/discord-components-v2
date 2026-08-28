@@ -6,19 +6,43 @@ import { findComponent, findComponents, walkComponents, type ComponentRef } from
 import {
   disableButtons,
   enableButtons,
+  getActionRow,
+  getActionRows,
+  getMediaGallery,
+  getMediaGalleries,
   getSection as opGetSection,
   getSections as opGetSections,
+  getSeparator,
+  getSeparators,
   getTextContents,
+  getTextDisplay,
+  getTextDisplays,
   keepOnly,
   matchesButtonIds,
+  moveActionRow,
+  moveMediaGallery,
   moveSection as opMoveSection,
+  moveSeparator,
+  moveTextDisplay,
+  removeActionRow,
   removeComponents,
+  removeMediaGallery,
   removeSection as opRemoveSection,
+  removeSeparator,
+  removeTextDisplay,
+  replaceActionRow,
+  replaceMediaGallery,
   replaceSection as opReplaceSection,
+  replaceSeparator,
   replaceText,
+  replaceTextDisplay,
   setButtonLabel,
   setDisabled,
+  type ActionRowRef,
+  type MediaGalleryRef,
   type SectionRef,
+  type SeparatorRef,
+  type TextDisplayRef,
 } from "./operations";
 
 /**
@@ -151,6 +175,134 @@ export class ComponentsEditor {
   /** Moves a Section from one section-index to another. Returns true if moved. */
   moveSection(from: number, to: number): this {
     opMoveSection(this.roots, from, to);
+    return this;
+  }
+
+  // ------------------------------------------------------------------
+  // Separator management
+  // ------------------------------------------------------------------
+
+  /** Returns all top-level Separator components with their indices. */
+  getSeparators(): SeparatorRef[] {
+    return getSeparators(this.roots);
+  }
+
+  /** Returns a single Separator by its separator-index, or null if not found. */
+  getSeparator(index: number): SeparatorRef | null {
+    return getSeparator(this.roots, index);
+  }
+
+  /** Removes a Separator by its separator-index. Returns `this` for chaining. */
+  removeSeparator(index: number): this {
+    removeSeparator(this.roots, index);
+    return this;
+  }
+
+  /** Replaces a Separator in-place by its separator-index. Returns `this` for chaining. */
+  replaceSeparator(index: number, replacement: RawComponent): this {
+    replaceSeparator(this.roots, index, replacement);
+    return this;
+  }
+
+  /** Moves a Separator from one separator-index to another. Returns `this` for chaining. */
+  moveSeparator(from: number, to: number): this {
+    moveSeparator(this.roots, from, to);
+    return this;
+  }
+
+  // ------------------------------------------------------------------
+  // TextDisplay management
+  // ------------------------------------------------------------------
+
+  /** Returns all top-level TextDisplay components with their indices. */
+  getTextDisplays(): TextDisplayRef[] {
+    return getTextDisplays(this.roots);
+  }
+
+  /** Returns a single TextDisplay by its index, or null if not found. */
+  getTextDisplay(index: number): TextDisplayRef | null {
+    return getTextDisplay(this.roots, index);
+  }
+
+  /** Removes a TextDisplay by its index. Returns `this` for chaining. */
+  removeTextDisplay(index: number): this {
+    removeTextDisplay(this.roots, index);
+    return this;
+  }
+
+  /** Replaces a TextDisplay in-place by its index. Returns `this` for chaining. */
+  replaceTextDisplay(index: number, replacement: RawComponent): this {
+    replaceTextDisplay(this.roots, index, replacement);
+    return this;
+  }
+
+  /** Moves a TextDisplay from one index to another. Returns `this` for chaining. */
+  moveTextDisplay(from: number, to: number): this {
+    moveTextDisplay(this.roots, from, to);
+    return this;
+  }
+
+  // ------------------------------------------------------------------
+  // MediaGallery management
+  // ------------------------------------------------------------------
+
+  /** Returns all top-level MediaGallery components with their indices. */
+  getMediaGalleries(): MediaGalleryRef[] {
+    return getMediaGalleries(this.roots);
+  }
+
+  /** Returns a single MediaGallery by its index, or null if not found. */
+  getMediaGallery(index: number): MediaGalleryRef | null {
+    return getMediaGallery(this.roots, index);
+  }
+
+  /** Removes a MediaGallery by its index. Returns `this` for chaining. */
+  removeMediaGallery(index: number): this {
+    removeMediaGallery(this.roots, index);
+    return this;
+  }
+
+  /** Replaces a MediaGallery in-place by its index. Returns `this` for chaining. */
+  replaceMediaGallery(index: number, replacement: RawComponent): this {
+    replaceMediaGallery(this.roots, index, replacement);
+    return this;
+  }
+
+  /** Moves a MediaGallery from one index to another. Returns `this` for chaining. */
+  moveMediaGallery(from: number, to: number): this {
+    moveMediaGallery(this.roots, from, to);
+    return this;
+  }
+
+  // ------------------------------------------------------------------
+  // ActionRow management
+  // ------------------------------------------------------------------
+
+  /** Returns all top-level ActionRow components with their indices. */
+  getActionRows(): ActionRowRef[] {
+    return getActionRows(this.roots);
+  }
+
+  /** Returns a single ActionRow by its index, or null if not found. */
+  getActionRow(index: number): ActionRowRef | null {
+    return getActionRow(this.roots, index);
+  }
+
+  /** Removes an ActionRow by its index. Returns `this` for chaining. */
+  removeActionRow(index: number): this {
+    removeActionRow(this.roots, index);
+    return this;
+  }
+
+  /** Replaces an ActionRow in-place by its index. Returns `this` for chaining. */
+  replaceActionRow(index: number, replacement: RawComponent): this {
+    replaceActionRow(this.roots, index, replacement);
+    return this;
+  }
+
+  /** Moves an ActionRow from one index to another. Returns `this` for chaining. */
+  moveActionRow(from: number, to: number): this {
+    moveActionRow(this.roots, from, to);
     return this;
   }
 

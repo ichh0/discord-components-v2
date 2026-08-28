@@ -153,17 +153,24 @@ findComponents(rawArray, selector); // standalone version
 
 Editing methods are available right on the builder: `disableButtons`, `enableButtons`, `setDisabled`, `setButtonLabel`, `remove`, `removeButtons`, `keepOnly`, `replaceText`, `find`, `findAll`, `getTexts`.
 
-## 🧩 Section management
+## 🧩 Section & layout-component management
 
-`V2Builder` and `ComponentsEditor` let you flexibly manage `Section` components inside the container by their index. Handy when a single component has several sections separated by separators: remove, replace or reorder any of them.
+`V2Builder` and `ComponentsEditor` let you flexibly manage components inside the container by their index: sections (`Section`), separators (`Separator`), text blocks (`TextDisplay`), galleries (`MediaGallery`) and action rows (`ActionRow`). Each type is indexed independently (only siblings of the same type are counted), and any of them can be removed, replaced or reordered.
 
 | Method | Purpose |
 |---|---|
-| `.getSections()` | list every section: `SectionRef[]` (`{ index, component, containerIndex }`) |
-| `.getSection(index)` | one section by index, or `null` |
-| `.removeSection(index)` | remove the section at index (returns `this` for chaining) |
-| `.replaceSection(index, replacement)` | replace the section in-place |
-| `.moveSection(from, to)` | move a section from one position to another |
+| `.getSections()` · `.getSection(i)` | list / one section: `{ index, component, containerIndex }` |
+| `.removeSection(i)` · `.replaceSection(i, r)` · `.moveSection(from, to)` | remove / replace / move a section |
+| `.getSeparators()` · `.getSeparator(i)` | list / one separator |
+| `.removeSeparator(i)` · `.replaceSeparator(i, r)` · `.moveSeparator(from, to)` | remove / replace / move a separator |
+| `.getTextDisplays()` · `.getTextDisplay(i)` | list / one text block |
+| `.removeTextDisplay(i)` · `.replaceTextDisplay(i, r)` · `.moveTextDisplay(from, to)` | remove / replace / move a text block |
+| `.getMediaGalleries()` · `.getMediaGallery(i)` | list / one gallery |
+| `.removeMediaGallery(i)` · `.replaceMediaGallery(i, r)` · `.moveMediaGallery(from, to)` | remove / replace / move a gallery |
+| `.getActionRows()` · `.getActionRow(i)` | list / one action row |
+| `.removeActionRow(i)` · `.replaceActionRow(i, r)` · `.moveActionRow(from, to)` | remove / replace / move an action row |
+
+All *remove / replace / move* methods return `this` for chaining.
 
 ```ts
 const builder = V2Builder.parse(message);
@@ -171,8 +178,14 @@ const builder = V2Builder.parse(message);
 // How many sections are there?
 const sections = builder.getSections(); // [{ index: 0, component, containerIndex: 2 }, ...]
 
-// Remove the second section
-builder.removeSection(1);
+// Remove the second separator
+builder.removeSeparator(1);
+
+// Drop every separator between sections
+while (builder.getSeparators().length) builder.removeSeparator(0);
+
+// Remove one text block
+builder.removeTextDisplay(0);
 
 // Replace the first section entirely
 builder.replaceSection(0, {
@@ -194,18 +207,19 @@ The same operations are available through `ComponentsEditor`:
 
 ```ts
 editComponents(message)
-  .removeSection(0)
+  .removeSeparator(1)
+  .removeTextDisplay(0)
   .getSections();
 ```
 
-And as standalone functions over a raw container-children array (`getSections`, `getSection`, `removeSection`, `replaceSection`, `moveSection`) — these auto-expand a root container:
+And as standalone functions over a raw container-children array (`getSections`, `getSection`, `removeSection`, `replaceSection`, `moveSection`, `getSeparators`, `getSeparator`, `removeSeparator`, `replaceSeparator`, `moveSeparator`, …) — these auto-expand a root container:
 
 ```ts
-import { getSections, removeSection, moveSection } from "discordjs-components-v2";
+import { getSeparators, removeSeparator, moveSeparator } from "discordjs-components-v2";
 
-const sections = getSections(container.components); // [SectionRef]
-removeSection(container.components, 1);
-moveSection(container.components, 2, 0);
+const seps = getSeparators(container.components); // [SeparatorRef]
+removeSeparator(container.components, 1);
+moveSeparator(container.components, 2, 0);
 ```
 
 ## ✅ Validation

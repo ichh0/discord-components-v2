@@ -18,19 +18,43 @@ import { validateComponents } from "../core/validate";
 import {
   disableButtons as opDisableButtons,
   enableButtons as opEnableButtons,
+  getActionRow as opGetActionRow,
+  getActionRows as opGetActionRows,
+  getMediaGallery as opGetMediaGallery,
+  getMediaGalleries as opGetMediaGalleries,
   getSection as opGetSection,
   getSections as opGetSections,
+  getSeparator as opGetSeparator,
+  getSeparators as opGetSeparators,
   getTextContents,
+  getTextDisplay as opGetTextDisplay,
+  getTextDisplays as opGetTextDisplays,
   keepOnly as opKeepOnly,
   matchesButtonIds,
+  moveActionRow as opMoveActionRow,
+  moveMediaGallery as opMoveMediaGallery,
   moveSection as opMoveSection,
+  moveSeparator as opMoveSeparator,
+  moveTextDisplay as opMoveTextDisplay,
+  removeActionRow as opRemoveActionRow,
   removeComponents as opRemoveComponents,
+  removeMediaGallery as opRemoveMediaGallery,
   removeSection as opRemoveSection,
+  removeSeparator as opRemoveSeparator,
+  removeTextDisplay as opRemoveTextDisplay,
+  replaceActionRow as opReplaceActionRow,
+  replaceMediaGallery as opReplaceMediaGallery,
   replaceSection as opReplaceSection,
+  replaceSeparator as opReplaceSeparator,
   replaceText as opReplaceText,
+  replaceTextDisplay as opReplaceTextDisplay,
   setButtonLabel as opSetButtonLabel,
   setDisabled as opSetDisabled,
+  type ActionRowRef,
+  type MediaGalleryRef,
   type SectionRef,
+  type SeparatorRef,
+  type TextDisplayRef,
 } from "../edit/operations";
 import type {
   ButtonOptions,
@@ -529,6 +553,134 @@ export class V2Builder {
   /** Moves a Section from one section-index to another. Returns `this` for chaining. */
   moveSection(from: number, to: number): this {
     opMoveSection(this.containerData.components as RawComponent[], from, to);
+    return this;
+  }
+
+  // ------------------------------------------------------------------
+  // Separator management
+  // ------------------------------------------------------------------
+
+  /** Returns all top-level Separator components with their indices. */
+  getSeparators(): SeparatorRef[] {
+    return opGetSeparators(this.containerData.components as RawComponent[]);
+  }
+
+  /** Returns a single Separator by its separator-index, or null if not found. */
+  getSeparator(index: number): SeparatorRef | null {
+    return opGetSeparator(this.containerData.components as RawComponent[], index);
+  }
+
+  /** Removes a Separator by its separator-index. Returns `this` for chaining. */
+  removeSeparator(index: number): this {
+    opRemoveSeparator(this.containerData.components as RawComponent[], index);
+    return this;
+  }
+
+  /** Replaces a Separator in-place by its separator-index. Returns `this` for chaining. */
+  replaceSeparator(index: number, replacement: RawComponent): this {
+    opReplaceSeparator(this.containerData.components as RawComponent[], index, replacement);
+    return this;
+  }
+
+  /** Moves a Separator from one separator-index to another. Returns `this` for chaining. */
+  moveSeparator(from: number, to: number): this {
+    opMoveSeparator(this.containerData.components as RawComponent[], from, to);
+    return this;
+  }
+
+  // ------------------------------------------------------------------
+  // TextDisplay management
+  // ------------------------------------------------------------------
+
+  /** Returns all top-level TextDisplay components with their indices. */
+  getTextDisplays(): TextDisplayRef[] {
+    return opGetTextDisplays(this.containerData.components as RawComponent[]);
+  }
+
+  /** Returns a single TextDisplay by its index, or null if not found. */
+  getTextDisplay(index: number): TextDisplayRef | null {
+    return opGetTextDisplay(this.containerData.components as RawComponent[], index);
+  }
+
+  /** Removes a TextDisplay by its index. Returns `this` for chaining. */
+  removeTextDisplay(index: number): this {
+    opRemoveTextDisplay(this.containerData.components as RawComponent[], index);
+    return this;
+  }
+
+  /** Replaces a TextDisplay in-place by its index. Returns `this` for chaining. */
+  replaceTextDisplay(index: number, replacement: RawComponent): this {
+    opReplaceTextDisplay(this.containerData.components as RawComponent[], index, replacement);
+    return this;
+  }
+
+  /** Moves a TextDisplay from one index to another. Returns `this` for chaining. */
+  moveTextDisplay(from: number, to: number): this {
+    opMoveTextDisplay(this.containerData.components as RawComponent[], from, to);
+    return this;
+  }
+
+  // ------------------------------------------------------------------
+  // MediaGallery management
+  // ------------------------------------------------------------------
+
+  /** Returns all top-level MediaGallery components with their indices. */
+  getMediaGalleries(): MediaGalleryRef[] {
+    return opGetMediaGalleries(this.containerData.components as RawComponent[]);
+  }
+
+  /** Returns a single MediaGallery by its index, or null if not found. */
+  getMediaGallery(index: number): MediaGalleryRef | null {
+    return opGetMediaGallery(this.containerData.components as RawComponent[], index);
+  }
+
+  /** Removes a MediaGallery by its index. Returns `this` for chaining. */
+  removeMediaGallery(index: number): this {
+    opRemoveMediaGallery(this.containerData.components as RawComponent[], index);
+    return this;
+  }
+
+  /** Replaces a MediaGallery in-place by its index. Returns `this` for chaining. */
+  replaceMediaGallery(index: number, replacement: RawComponent): this {
+    opReplaceMediaGallery(this.containerData.components as RawComponent[], index, replacement);
+    return this;
+  }
+
+  /** Moves a MediaGallery from one index to another. Returns `this` for chaining. */
+  moveMediaGallery(from: number, to: number): this {
+    opMoveMediaGallery(this.containerData.components as RawComponent[], from, to);
+    return this;
+  }
+
+  // ------------------------------------------------------------------
+  // ActionRow management
+  // ------------------------------------------------------------------
+
+  /** Returns all top-level ActionRow components with their indices. */
+  getActionRows(): ActionRowRef[] {
+    return opGetActionRows(this.containerData.components as RawComponent[]);
+  }
+
+  /** Returns a single ActionRow by its index, or null if not found. */
+  getActionRow(index: number): ActionRowRef | null {
+    return opGetActionRow(this.containerData.components as RawComponent[], index);
+  }
+
+  /** Removes an ActionRow by its index. Returns `this` for chaining. */
+  removeActionRow(index: number): this {
+    opRemoveActionRow(this.containerData.components as RawComponent[], index);
+    return this;
+  }
+
+  /** Replaces an ActionRow in-place by its index. Returns `this` for chaining. */
+  replaceActionRow(index: number, replacement: RawComponent): this {
+    opReplaceActionRow(this.containerData.components as RawComponent[], index, replacement);
+    return this;
+  }
+
+  /** Moves an ActionRow from one index to another. Returns `this` for chaining. */
+  moveActionRow(from: number, to: number): this {
+    opMoveActionRow(this.containerData.components as RawComponent[], from, to);
     return this;
   }
 
