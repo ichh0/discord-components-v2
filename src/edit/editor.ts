@@ -27,6 +27,7 @@ import {
   removeActionRow,
   removeComponents,
   removeMediaGallery,
+  removeSelectMenus,
   removeSection as opRemoveSection,
   removeSeparator,
   removeTextDisplay,
@@ -38,9 +39,23 @@ import {
   replaceTextDisplay,
   setButtonLabel,
   setDisabled,
+  clearSelectValues,
+  findSelectMenu,
+  getSelectMenus,
+  renameCustomId,
+  replaceSelectMenu,
+  setButtonEmoji,
+  setButtonStyle,
+  setButtonUrl,
+  setSelectDisabled,
+  setSelectMinMaxValues,
+  setSelectOptions,
+  setSelectPlaceholder,
   type ActionRowRef,
   type MediaGalleryRef,
   type SectionRef,
+  type SelectMenuMatchOptions,
+  type SelectOptionInput,
   type SeparatorRef,
   type TextDisplayRef,
 } from "./operations";
@@ -128,6 +143,90 @@ export class ComponentsEditor {
   /** Completely removes all buttons (optionally restricted by custom_id list). */
   removeButtons(customIds?: string | string[]): this {
     removeComponents(this.roots, (c) => matchesButtonIds(c, customIds));
+    return this;
+  }
+
+  /** Removes every select menu matching `type` and/or `custom_ids`. */
+  removeSelectMenus(options?: SelectMenuMatchOptions): this {
+    removeSelectMenus(this.roots, options);
+    return this;
+  }
+
+  /** Alias for {@link removeSelectMenus}. */
+  removeSelectMenu(options?: SelectMenuMatchOptions): this {
+    return this.removeSelectMenus(options);
+  }
+
+  /**
+   * Clears the chosen values of matching select menus (`default_values` /
+   * string-select option `default`), so the same menu can fire again.
+   */
+  clearSelectValues(options?: SelectMenuMatchOptions): this {
+    clearSelectValues(this.roots, options);
+    return this;
+  }
+
+  /** Sets (or removes, when `undefined`) the placeholder of a select by custom_id. */
+  setSelectPlaceholder(customId: string, placeholder?: string): this {
+    setSelectPlaceholder(this.roots, customId, placeholder);
+    return this;
+  }
+
+  /** Replaces the options of a string select found by custom_id (`emoji` as a string). */
+  setSelectOptions(customId: string, options: SelectOptionInput[]): this {
+    setSelectOptions(this.roots, customId, options);
+    return this;
+  }
+
+  /** Sets (or removes, when `undefined`) min/max values of a select by custom_id. */
+  setSelectMinMaxValues(customId: string, min?: number, max?: number): this {
+    setSelectMinMaxValues(this.roots, customId, min, max);
+    return this;
+  }
+
+  /** Enables/disables the matching select menus (default: disabled). */
+  setSelectDisabled(options?: SelectMenuMatchOptions, disabled = true): this {
+    setSelectDisabled(this.roots, options, disabled);
+    return this;
+  }
+
+  /** Returns every select menu matching `type` and/or `custom_ids`. */
+  getSelectMenus(options?: SelectMenuMatchOptions): RawComponent[] {
+    return getSelectMenus(this.roots, options);
+  }
+
+  /** Returns the first select menu matching `type` and/or `custom_ids`, or null. */
+  findSelectMenu(options?: SelectMenuMatchOptions): RawComponent | null {
+    return findSelectMenu(this.roots, options);
+  }
+
+  /** Replaces the first select menu matching `options` with `replacement`. */
+  replaceSelectMenu(options: SelectMenuMatchOptions, replacement: RawComponent): this {
+    replaceSelectMenu(this.roots, options, replacement);
+    return this;
+  }
+
+  /** Changes a button style by custom_id (keeps the payload valid). */
+  setButtonStyle(customId: string, style: number): this {
+    setButtonStyle(this.roots, customId, style);
+    return this;
+  }
+
+  /** Sets (or removes, when `undefined`) a button emoji by custom_id. */
+  setButtonEmoji(customId: string, emoji?: string): this {
+    setButtonEmoji(this.roots, customId, emoji);
+    return this;
+  }
+
+  /** Sets a button URL by custom_id (converts to a Link button); `undefined` removes it. */
+  setButtonUrl(customId: string, url?: string): this {
+    setButtonUrl(this.roots, customId, url);
+    return this;
+  }
+
+  /** Renames the custom_id on every matching component; throws if nothing matched. */
+  renameCustomId(from: string, to: string): this {
+    renameCustomId(this.roots, from, to);
     return this;
   }
 

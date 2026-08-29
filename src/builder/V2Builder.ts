@@ -60,9 +60,24 @@ import {
 	replaceSeparator as opReplaceSeparator,
 	replaceText as opReplaceText,
 	replaceTextDisplay as opReplaceTextDisplay,
+	clearSelectValues as opClearSelectValues,
+	removeSelectMenus as opRemoveSelectMenus,
+	findSelectMenu as opFindSelectMenu,
+	getSelectMenus as opGetSelectMenus,
+	renameCustomId as opRenameCustomId,
+	replaceSelectMenu as opReplaceSelectMenu,
+	setButtonEmoji as opSetButtonEmoji,
+	setButtonStyle as opSetButtonStyle,
+	setButtonUrl as opSetButtonUrl,
+	setSelectDisabled as opSetSelectDisabled,
+	setSelectMinMaxValues as opSetSelectMinMaxValues,
+	setSelectOptions as opSetSelectOptions,
+	setSelectPlaceholder as opSetSelectPlaceholder,
 	setButtonLabel as opSetButtonLabel,
 	setDisabled as opSetDisabled,
 	type SectionRef,
+	type SelectMenuMatchOptions,
+	type SelectOptionInput,
 	type SeparatorRef,
 	type TextDisplayRef,
 } from "../edit/operations";
@@ -107,19 +122,8 @@ const BUTTON_STYLES: Record<ButtonStyleName, ButtonStyle> = {
 
 type ContainerChild = APIContainerComponent["components"][number];
 
-/** Parses "👍", ":name:", "<:name:id>", "<a:name:id>" into an API emoji object. */
-export function parseEmoji(input: string): {
-	name?: string;
-	id?: string;
-	animated?: boolean;
-} {
-	const custom = /^<(a?):(\w+):(\d+)>$/.exec(input.trim());
-	if (custom)
-		return { animated: custom[1] === "a", name: custom[2], id: custom[3] };
-	const shortcode = /^:(\w+):$/.exec(input.trim());
-	if (shortcode) return { name: shortcode[1] };
-	return { name: input };
-}
+import { parseEmoji } from "../core/emoji";
+export { parseEmoji };
 
 /**
  * Fluent builder for Discord Components V2 messages.
@@ -555,6 +559,90 @@ export class V2Builder {
 
 	removeButtons(customIds?: string | string[]): this {
 		return this.remove((c) => matchesButtonIds(c, customIds));
+	}
+
+	/** Removes every select menu matching `type` and/or `custom_ids`; empty rows are pruned. */
+	removeSelectMenus(options?: SelectMenuMatchOptions): this {
+		opRemoveSelectMenus(this.containerData.components as RawComponent[], options);
+		return this;
+	}
+
+	/** Alias for {@link removeSelectMenus}. */
+	removeSelectMenu(options?: SelectMenuMatchOptions): this {
+		return this.removeSelectMenus(options);
+	}
+
+	/**
+	 * Clears the chosen values of matching select menus (`default_values` /
+	 * string-select option `default`), so the same menu can fire again.
+	 */
+	clearSelectValues(options?: SelectMenuMatchOptions): this {
+		opClearSelectValues(this.containerData.components as RawComponent[], options);
+		return this;
+	}
+
+	/** Sets (or removes, when `undefined`) the placeholder of a select by custom_id. */
+	setSelectPlaceholder(customId: string, placeholder?: string): this {
+		opSetSelectPlaceholder(this.containerData.components as RawComponent[], customId, placeholder);
+		return this;
+	}
+
+	/** Replaces the options of a string select found by custom_id (`emoji` as a string). */
+	setSelectOptions(customId: string, options: SelectOptionInput[]): this {
+		opSetSelectOptions(this.containerData.components as RawComponent[], customId, options);
+		return this;
+	}
+
+	/** Sets (or removes, when `undefined`) min/max values of a select by custom_id. */
+	setSelectMinMaxValues(customId: string, min?: number, max?: number): this {
+		opSetSelectMinMaxValues(this.containerData.components as RawComponent[], customId, min, max);
+		return this;
+	}
+
+	/** Enables/disables the matching select menus (default: disabled). */
+	setSelectDisabled(options?: SelectMenuMatchOptions, disabled = true): this {
+		opSetSelectDisabled(this.containerData.components as RawComponent[], options, disabled);
+		return this;
+	}
+
+	/** Returns every select menu matching `type` and/or `custom_ids`. */
+	getSelectMenus(options?: SelectMenuMatchOptions): RawComponent[] {
+		return opGetSelectMenus(this.containerData.components as RawComponent[], options);
+	}
+
+	/** Returns the first select menu matching `type` and/or `custom_ids`, or null. */
+	findSelectMenu(options?: SelectMenuMatchOptions): RawComponent | null {
+		return opFindSelectMenu(this.containerData.components as RawComponent[], options);
+	}
+
+	/** Replaces the first select menu matching `options` with `replacement`. */
+	replaceSelectMenu(options: SelectMenuMatchOptions, replacement: RawComponent): this {
+		opReplaceSelectMenu(this.containerData.components as RawComponent[], options, replacement);
+		return this;
+	}
+
+	/** Changes a button style by custom_id (keeps the payload valid). */
+	setButtonStyle(customId: string, style: number): this {
+		opSetButtonStyle(this.containerData.components as RawComponent[], customId, style);
+		return this;
+	}
+
+	/** Sets (or removes, when `undefined`) a button emoji by custom_id. */
+	setButtonEmoji(customId: string, emoji?: string): this {
+		opSetButtonEmoji(this.containerData.components as RawComponent[], customId, emoji);
+		return this;
+	}
+
+	/** Sets a button URL by custom_id (converts to a Link button); `undefined` removes it. */
+	setButtonUrl(customId: string, url?: string): this {
+		opSetButtonUrl(this.containerData.components as RawComponent[], customId, url);
+		return this;
+	}
+
+	/** Renames the custom_id on every matching component; throws if nothing matched. */
+	renameCustomId(from: string, to: string): this {
+		opRenameCustomId(this.containerData.components as RawComponent[], from, to);
+		return this;
 	}
 
 	/** Removes everything except matching subtrees. */

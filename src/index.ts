@@ -42,10 +42,23 @@ export type { ValidationResult } from "./core/validate";
 // Builder
 export { parseComponents, parseEmoji, V2Builder } from "./builder/V2Builder";
 export type { V2Payload } from "./builder/V2Builder";
-export { V2ModalBuilder } from "./builder/V2ModalBuilder";
+export { V2ModalBuilder, parseModalSubmit } from "./builder/V2ModalBuilder";
+export { CustomIdBuilder, CustomIdError, CUSTOM_ID_MAX_LENGTH } from "./builder/CustomIdBuilder";
+export type {
+  CustomIdName,
+  CustomIdParts,
+  ParsedCustomId,
+} from "./builder/CustomIdBuilder";
 export type {
   ChannelSelectMenuData,
+  MentionableDefaultValue,
   MentionableSelectMenuData,
+  ModalComponentBuilder,
+  ModalFieldKind,
+  ModalFieldSchema,
+  ModalFieldValues,
+  ModalSubmitFieldsLike,
+  ModalTarget,
   RadioGroupData,
   RadioGroupOptionData,
   RoleSelectMenuData,
@@ -73,20 +86,24 @@ export type {
 // Editing
 export { ComponentsEditor, editComponents } from "./edit/editor";
 export {
+  clearSelectValues,
   disableButtons,
   enableButtons,
+  findSelectMenu,
   getActionRow,
   getActionRows,
   getMediaGallery,
   getMediaGalleries,
   getSection,
   getSections,
+  getSelectMenus,
   getSeparator,
   getSeparators,
   getTextContents,
   getTextDisplay,
   getTextDisplays,
   keepOnly,
+  matchesSelectMenu,
   moveActionRow,
   moveMediaGallery,
   moveSection,
@@ -96,16 +113,26 @@ export {
   removeComponents,
   removeMediaGallery,
   removeSection,
+  removeSelectMenus,
   removeSeparator,
   removeTextDisplay,
+  renameCustomId,
   replaceActionRow,
   replaceMediaGallery,
   replaceSection,
+  replaceSelectMenu,
   replaceSeparator,
   replaceText,
   replaceTextDisplay,
+  setButtonEmoji,
   setButtonLabel,
+  setButtonStyle,
+  setButtonUrl,
   setDisabled,
+  setSelectDisabled,
+  setSelectMinMaxValues,
+  setSelectOptions,
+  setSelectPlaceholder,
 } from "./edit/operations";
 export type {
   ActionRowRef,
@@ -114,6 +141,9 @@ export type {
   MediaGalleryRef,
   RemoveOptions,
   SectionRef,
+  SelectMenuMatchOptions,
+  SelectMenuType,
+  SelectOptionInput,
   SeparatorRef,
   TextDisplayRef,
 } from "./edit/operations";

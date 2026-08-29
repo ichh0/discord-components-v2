@@ -12,6 +12,15 @@
 > [!NOTE]
 > Работает на чистых структурах `discord-api-types/v10`. discord.js не нужен ни в рантайме, ни как peer-зависимость — результат полностью совместим с discord.js v14 (передавайте JSON прямо в `components:`).
 
+### ✨ Возможности
+
+- **`V2Builder`** — декларативная сборка компонентов: текст, кнопки, селекты, секции, разделители, галереи, вложения, ANSI-таблицы.
+- **Кэш-фри разбор** — `parseComponents()` / `V2Builder.parse()` превращают `message.components` обратно в билдер.
+- **Утилиты редактирования** — `editComponents()` / `ComponentsEditor`: удалить, заменить, переместить, отключить кнопки, переписать текст/секции/галереи.
+- **Модальные окна V2** — `V2ModalBuilder`: плоские описания полей + мутация после добавления, типизированный разбор сабмита (`parseSubmit`), `.from()`, валидация и `rule()`.
+- **Состояние в `customId`** — `CustomIdBuilder`: кодек `name:entityId:executorId` с гарантией ≤100 символов.
+- **Валидация** — `validateComponents()` / `build()` ловят лимиты Discord до отправки.
+
 ---
 
 ## 📦 Установка
@@ -117,6 +126,32 @@ await interaction.editReply({ components, flags: 32768 });
 
 Автоматическая чистка после удалений: пустые ActionRow удаляются, секция без текста/аксессуара удаляется целиком (Discord такое не принимает).
 
+### Селект-меню: удаление, сброс и правка
+
+`removeSelectMenus({ type, customIds })` удаляет селекты по виду и/или по `custom_id` (пустые ряды чистятся автоматически), `clearSelectValues(...)` обнуляет ранее выбранное значение — чтобы тот же селект можно было вызвать заново:
+
+```ts
+editComponents(await interaction.fetchReply())
+  .removeSelectMenus({ type: "string" })          // убрать все строковые селекты
+  .removeSelectMenu({ type: ["role", "user"], customIds: "filter" }) // alias removeSelectMenus
+  .clearSelectValues({ type: "mentionable" })     // сбросить выбранное (default_values / default)
+  .getSelectMenus({ type: "user" })               // найти селекты (массив с raw-компонентами)
+  .findSelectMenu({ customIds: "pick" })          // первый подходящий или null
+  .setSelectPlaceholder("pick", "Выбери")         // placeholder (undefined — убрать)
+  .setSelectOptions("pick", [                     // заменить опции строкового селекта
+    { label: "X", value: "x", emoji: ":fire:" },
+    { label: "Y", value: "y", default: true },
+  ])
+  .setSelectMinMaxValues("pick", 1, 3)            // min/max (undefined — убрать)
+  .setSelectDisabled({ type: "role" })            // disabled (false — включить обратно)
+  .replaceSelectMenu({ customIds: "roles" }, { type: 2, style: 1, label: "Go", custom_id: "go" })
+  .toJSON();
+```
+
+Кнопки: `setButtonStyle(customId, style)` (при переходе в Link убирает `custom_id`, при выходе — `url`), `setButtonEmoji(customId, emoji?)` (та же строка, что в `parseEmoji`; `undefined` — убрать), `setButtonUrl(customId, url?)` (превращает кнопку в Link; `undefined` — убрать), `renameCustomId(from, to)` (переименовывает `custom_id` везде, бросает ошибку, если ничего не нашлось).
+
+Всё доступно и на `V2Builder`/`parseComponents`, и как standalone-функции. `type`: `"string" | "user" | "role" | "channel" | "mentionable"` (можно массив); фильтр по `customIds` — строкой или массивом.
+
 ### Селекторы
 
 Везде, где нужен поиск/удаление, используется единый селектор:
@@ -155,7 +190,143 @@ findComponents(rawArray, selector); // standalone-версия
 | `.setId(n)` | числовой id контейнера |
 | `.clear()` / `.getAttachments()` | сброс состояния / файлы |
 
-Методы редактирования доступны прямо на билдере: `disableButtons`, `enableButtons`, `setDisabled`, `setButtonLabel`, `remove`, `removeButtons`, `keepOnly`, `replaceText`, `find`, `findAll`, `getTexts`.
+Методы редактирования доступны прямо на билдере: `disableButtons`, `enableButtons`, `setDisabled`, `setButtonLabel`, `setButtonStyle`, `setButtonEmoji`, `setButtonUrl`, `remove`, `removeButtons`, `removeSelectMenus`/`removeSelectMenu`, `clearSelectValues`, `setSelectPlaceholder`, `setSelectOptions`, `setSelectMinMaxValues`, `setSelectDisabled`, `getSelectMenus`, `findSelectMenu`, `replaceSelectMenu`, `renameCustomId`, `keepOnly`, `replaceText`, `find`, `findAll`, `getTexts`.
+
+## 📝 Модальные окна (`V2ModalBuilder`)
+
+Упрощённая обёртка над модальным API Components V2 — вместо ручного жонглирования `LabelBuilder` + внутренними билдерами опишите форму плоскими объектами. Каждое интерактивное поле автоматически оборачивается в `LabelBuilder`.
+
+```ts
+import { V2ModalBuilder } from "discordjs-components-v2";
+
+const modal = new V2ModalBuilder()
+  .setTitle("Создание набора")
+  .setCustomId(`createNabor_modal:${executorId}`)
+  .textInput({
+    label: "Название набора",
+    customId: "name_nabor",
+    minLength: 3,
+    maxLength: 15,
+    placeholder: "например: Модератор",
+    required: true,
+  })
+  .roleSelect({ label: "Выберите роль", customId: "give_role", required: true })
+  .channelSelect({ label: "Канал публикации", customId: "publish_channel", maxValues: 1, minValues: 1, channelTypes: [0] })
+  .radioGroup({
+    label: "Тип ввода",
+    customId: "type_input",
+    options: [
+      { label: "Однострочный", value: "short", description: "Одна строка" },
+      { label: "Многострочный", value: "long", description: "Одна и более" },
+    ],
+  })
+  .build();
+
+await interaction.showModal(modal);
+```
+
+Поля: `.textInput(...)` (style `"short"`/`"paragraph"`, `value` — префилл), `.roleSelect(...)`, `.channelSelect(...)`, `.userSelect(...)`, `.mentionableSelect(...)`, `.stringSelect(...)` (эмодзи строкой: `"👍"`, `":name:"`, `"<:name:id>"`), `.radioGroup(...)`, плюс `.setTitle()` / `.setCustomId()` / `.build()`. Передавать `value: undefined` безопасно — значение просто не ставится.
+
+### Изменение полей после добавления
+
+Значение часто известно только после проверок (например, при редактировании вопроса). Каждое добавленное поле доступно по его `customId` как живой discord.js-билдер — мутации отражаются в уже собранной модалке:
+
+```ts
+const v2Modal = new V2ModalBuilder({ customId, title })
+  .textInput({ label: "Укажите текст вопроса", customId: "question", minLength: 5, maxLength: 45 })
+  .textInput({ label: "Подсказка", customId: "placeholder", style: "paragraph" })
+  .radioGroup({ label: "Тип ввода", customId: "type_input", options });
+
+if (isUpdate) v2Modal.setTextInputValue("question", questionData.label);
+
+const input = v2Modal.component("placeholder"); // живой TextInputBuilder
+input.setPlaceholder("новый placeholder");        // мутируем напрямую
+input.setRequired(true);
+
+await ctx.showModal(v2Modal.build());
+```
+
+| Метод | Что даёт |
+|---|---|
+| `.component(customId)` | живой билдер поля (`TextInputBuilder` / селект / `RadioGroupBuilder`) или `undefined` |
+| `.textInputComponent(customId)` | `TextInputBuilder \| undefined` — только текстовые поля |
+| `.setTextInputValue(customId, value)` | цепляющийся сеттер значения (`this`), кидает при неизвестном `customId` или не-текстовом поле |
+| `.inner` | лежащий в основе discord.js `ModalBuilder` (редко нужно) |
+
+Через возвращённый билдер мутируется всё: `.setValue()`, `.setRequired()`, `.setPlaceholder()`, `.setOptions()`, `.setDefaultRoles()` и т.д.
+
+Сеттеры по умолчанию для селектов и радио (дефолты можно менять даже после добавления поля):
+
+| Метод | Что делает |
+|---|---|
+| `.setRadioGroupDefault(customId, value)` | отметить вариант радио (кидает, если такого варианта нет) |
+| `.setStringSelectDefaults(customId, values[])` | отметить значения мультиселекта |
+| `.setRoleSelectDefaults(customId, roleIds[])` | дефолтные роли |
+| `.setChannelSelectDefaults(customId, channelIds[])` | дефолтные каналы |
+| `.setUserSelectDefaults(customId, userIds[])` | дефолтные пользователи |
+| `.setMentionableSelectDefaults(customId, defaults[])` | дефолты для mentionable: `{ id, type: "user" \| "role" }[]` |
+
+Пример:
+
+```ts
+const modal = new V2ModalBuilder({ title: "Фильтр", customId: "filter" })
+  .stringSelect({ label: "Каналы", customId: "chs", options })
+  .radioGroup({ label: "Направление", customId: "dir", options: dirOptions });
+
+if (savedFilter) {
+  modal.setStringSelectDefaults("chs", savedFilter.channels);
+  modal.setRadioGroupDefault("dir", savedFilter.direction);
+}
+```
+
+### Разбор сабмита
+
+`parseSubmit()` читает значения по `customId` прямо из интеракции в типизированный объект — без ручных кастов и `getTextInputValue()` по одному:
+
+```ts
+const query = modal.parseSubmit(interaction); // ModalSubmitInteraction
+
+query.name_nabor;      // string — textInput
+query.type_input;      // string | null — radio
+query.give_role;       // string[] | null — отмеченные id ролей (или users/channels/mentionables)
+query.publish_channel; // string[] | null
+```
+
+Состав автоматически берётся из добавленных полей; получить его отдельно можно через `.getSchema()` — массив `{ customId, kind }` (`"text_input" | "radio_group" | "string_select" | "role_select" | "channel_select" | "user_select" | "mentionable_select"`). Для полей вне билдера есть standalone-функция `parseModalSubmit(interaction, schema)`.
+
+### Восстановление из JSON
+
+`.from()` пересобирает модалку из JSON/дискордовского `ModalBuilder` — удобно при миграции старого кода (обычные `ActionRow` + `TextInput`) или хранения пресетов:
+
+```ts
+const rebuilt = V2ModalBuilder.from(savedModalJson).build();
+```
+
+### Валидация и `show()`
+
+`build()` проверяет форму перед сборкой и кидает `Error` с описанием всех проблем: отсутствие `title`/`custom_id`, дубликаты `customId`, `minLength > maxLength`, `minValues > maxValues`, а также ошибки пользовательских правил:
+
+```ts
+const modal = new V2ModalBuilder({ title: "Диапазон", customId: "range" })
+  .textInput({ label: "min", customId: "min_values" })
+  .textInput({ label: "max", customId: "max_values" })
+  .rule((b) => {
+    const min = Number(b.textInputComponent("min_values")?.data.value);
+    const max = Number(b.textInputComponent("max_values")?.data.value);
+    return Number.isFinite(min) && Number.isFinite(max) && min > max
+      ? "min не может быть больше max"
+      : null;
+  });
+
+modal.setTextInputValue("min_values", "10").setTextInputValue("max_values", "5");
+modal.build(); // throws — правило вернуло текст ошибки
+```
+
+Метод `.validate()` возвращает массив строк-проблем (пустой — всё ок), а `.show(target)` сразу показывает модалку:
+
+```ts
+await newsV2Modal.show(interaction); // eqv. interaction.showModal(newsV2Modal.build())
+```
 
 ## 🧩 Управление секциями и layout-компонентами
 
@@ -224,6 +395,47 @@ import { getSeparators, removeSeparator, moveSeparator } from "discordjs-compone
 const seps = getSeparators(container.components); // [SeparatorRef]
 removeSeparator(container.components, 1);
 moveSeparator(container.components, 2, 0);
+```
+
+## 🆔 Хранение состояния в `customId` (`CustomIdBuilder`)
+
+Компоненты без кэша = состояние живёт в самом `custom_id`. Однострочный кодек формата `name:entityId:executorId:rest…` (разделитель всегда `:`) с теми же правилами, что и классический `CIB`, но с гарантией лимита Discord в 100 символов:
+
+```ts
+import { CustomIdBuilder, CustomIdError } from "discordjs-components-v2";
+
+const id = CustomIdBuilder.build({
+  name: "_modal",       // autocomplete: "_selectmenu" | "_button" | "_modal" | string
+  entityId: draft.id,   // "not"/undefined/"" → пропускается (как «нет сущности»)
+  executorId,
+  rest: ["p", "2"],     // если нужно больше данных — простой массив сегментов
+});
+// "_modal:x7k:555:p:2" — всегда ≤ 100 символов
+
+const { name, entityId, executorId } = CustomIdBuilder.parse(id);
+CustomIdBuilder.is(id, "_modal"); // true → быстрый роутинг без if/else
+
+try {
+  CustomIdBuilder.build({ name: "_button", entityId: "a:b" }); // ":" в сегменте
+} catch (e) {
+  if (e instanceof CustomIdError) console.log(e.message); // CustomIdBuilder: …
+}
+```
+
+| Метод/Константа | Что даёт |
+|---|---|
+| `.build(parts)` | собрать id, кинуть `CustomIdError` при пустом имени, `:` внутри сегмента или переполнении >100 символов (с числом «сократить на N») |
+| `.parse(customId)` | lenient-разбор `{ name, entityId, executorId, rest, raw, length }`, никогда не падает |
+| `.is(customId, name)` | валидность + совпадение имени (готово для роутера) |
+| `.isValid(customId)` | true только если до 100 символов и есть имя |
+| `.capacityOf(parts)` / `.remaining(parts)` | занято / свободно символов до лимита |
+| `CUSTOM_ID_MAX_LENGTH` | константа `100` |
+| `CustomIdError` | отдельный класс ошибок |
+
+Замена вашего `CIB` — тот же API:
+
+```ts
+const CIB = CustomIdBuilder; // drop-in
 ```
 
 ## ✅ Валидация

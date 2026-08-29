@@ -349,6 +349,197 @@ test("editor: removeButtons removes every button entirely", () => {
   assert.equal(buttons.length, 0);
 });
 
+function makeMultiSelect() {
+  return new V2Builder()
+    .text("Селекты")
+    .selectMenu.string({ customId: "pick", options: [{ label: "A", value: "a" }] })
+    .selectMenu.role({ customId: "roles" })
+    .selectMenu.user({ customId: "users" })
+    .toJSON();
+}
+
+function fillSelectValues(raw) {
+  const components = raw.components ?? raw;
+  const values = flatten(components).filter((c) => c.type === ComponentType.StringSelect);
+  if (values[0]) {
+    values[0].options = [{ label: "A", value: "a", default: true }];
+  }
+  const roleSel = flatten(components).find((c) => c.type === ComponentType.RoleSelect);
+  if (roleSel) roleSel.default_values = [{ id: "111", type: "role" }];
+  const userSel = flatten(components).find((c) => c.type === ComponentType.UserSelect);
+  if (userSel) userSel.default_values = [{ id: "222", type: "user" }];
+  return raw;
+}
+
+test("editor: removeSelectMenus removes only matching kinds", () => {
+  const edited = editComponents(makeMultiSelect())
+    .removeSelectMenus({ type: "role" })
+    .toJSON();
+  const selects = flatten(edited).filter((c) => c.type !== CONTAINER && c.type === ComponentType.StringSelect || c.type === ComponentType.RoleSelect || c.type === ComponentType.UserSelect);
+  assert.deepEqual(
+    selects.map((s) => s.custom_id),
+    ["pick", "users"],
+  );
+});
+
+test("editor: removeSelectMenu alias + custom_id filter", () => {
+  const edited = editComponents(makeMultiSelect())
+    .removeSelectMenu({ type: ["string", "user"] })
+    .toJSON();
+  const selects = flatten(edited).filter(
+    (c) => c.type === ComponentType.StringSelect || c.type === ComponentType.UserSelect || c.type === ComponentType.RoleSelect,
+  );
+  assert.deepEqual(selects.map((s) => s.custom_id), ["roles"]);
+});
+
+test("editor: removeSelectMenus prunes emptied rows", () => {
+  const edited = editComponents(makeMultiSelect()).removeSelectMenus().toJSON();
+  const rows = flatten(edited).filter((c) => c.type === ROW);
+  const selects = flatten(edited).filter((c) => c.type === ComponentType.StringSelect || c.type === ComponentType.UserSelect || c.type === ComponentType.RoleSelect);
+  assert.equal(selects.length, 0);
+  // only the text + its container remain; all select rows gone
+  assert.equal(rows.length, 0);
+});
+
+test("editor: clearSelectValues resets defaults so the menu can fire again", () => {
+  const raw = fillSelectValues(makeMultiSelect());
+  const edited = editComponents(raw).clearSelectValues().toJSON();
+  const stringSel = flatten(edited).find((c) => c.type === ComponentType.StringSelect);
+  assert.equal("default" in stringSel.options[0], false);
+  const roleSel = flatten(edited).find((c) => c.type === ComponentType.RoleSelect);
+  assert.equal("default_values" in roleSel, false);
+  const userSel = flatten(edited).find((c) => c.type === ComponentType.UserSelect);
+  assert.equal("default_values" in userSel, false);
+});
+
+test("editor: clearSelectValues filtered by custom_id leaves others", () => {
+  const raw = fillSelectValues(makeMultiSelect());
+  const edited = editComponents(raw)
+    .clearSelectValues({ customIds: "pick" })
+    .toJSON();
+  const roleSel = flatten(edited).find((c) => c.type === ComponentType.RoleSelect);
+  assert.deepEqual(roleSel.default_values, [{ id: "111", type: "role" }]);
+});
+
+test("editor: clearSelectValues never mutates the input", () => {
+  const raw = fillSelectValues(makeMultiSelect());
+  const snapshot = JSON.stringify(raw);
+  editComponents(raw).clearSelectValues().removeSelectMenus({ type: "string" });
+  assert.equal(JSON.stringify(raw), snapshot);
+});
+
+function findStringSelect(edited) {
+  return flatten(edited).find((c) => c.type === ComponentType.StringSelect);
+}
+
+test("editor: setSelectOptions replaces string-select options", () => {
+  const edited = editComponents(makeMultiSelect())
+    .setSelectOptions("pick", [
+      { label: "X", value: "x", emoji: ":fire:" },
+      { label: "Y", value: "y", default: true },
+    ])
+    .toJSON();
+  const sel = findStringSelect(edited);
+  assert.deepEqual(sel.options, [
+    { label: "X", value: "x", default: false, emoji: { name: "fire" } },
+    { label: "Y", value: "y", default: true },
+  ]);
+});
+
+test("editor: setSelectPlaceholder sets and removes", () => {
+  let edited = editComponents(makeMultiSelect())
+    .setSelectPlaceholder("pick", "Выбери")
+    .toJSON();
+  assert.equal(findStringSelect(edited).placeholder, "Выбери");
+  edited = editComponents(edited).setSelectPlaceholder("pick", undefined).toJSON();
+  assert.equal("placeholder" in findStringSelect(edited), false);
+});
+
+test("editor: setSelectMinMaxValues sets and removes", () => {
+  let edited = editComponents(makeMultiSelect())
+    .setSelectMinMaxValues("pick", 0, 3)
+    .toJSON();
+  const sel = findStringSelect(edited);
+  assert.equal(sel.min_values, 0);
+  assert.equal(sel.max_values, 3);
+  edited = editComponents(edited).setSelectMinMaxValues("pick", undefined, 1).toJSON();
+  const sel2 = findStringSelect(edited);
+  assert.equal("min_values" in sel2, false);
+  assert.equal(sel2.max_values, 1);
+});
+
+test("editor: setSelectDisabled + enable", () => {
+  const edited = editComponents(makeMultiSelect())
+    .setSelectDisabled()
+    .setSelectDisabled({ type: ["role", "user"] }, false)
+    .toJSON();
+  const selects = flatten(edited).filter((c) => c.type === ComponentType.StringSelect || c.type === ComponentType.RoleSelect || c.type === ComponentType.UserSelect);
+  const byId = Object.fromEntries(selects.map((s) => [s.custom_id, s.disabled]));
+  assert.equal(byId.pick, true);
+  assert.equal(byId.roles, false);
+  assert.equal(byId.users, false);
+});
+
+test("editor: getSelectMenus / findSelectMenu indexing", () => {
+  const editor = editComponents(makeMultiSelect());
+  assert.deepEqual(
+    editor.getSelectMenus({ type: "user" }).map((s) => s.custom_id),
+    ["users"],
+  );
+  assert.equal(editor.findSelectMenu({ customIds: "roles" }).custom_id, "roles");
+  assert.equal(editor.findSelectMenu({ type: "channel" }), null);
+});
+
+test("editor: replaceSelectMenu swaps the menu in place", () => {
+  const replacement = { type: ComponentType.Button, style: 2, label: "Go", custom_id: "go" };
+  const edited = editComponents(makeMultiSelect())
+    .replaceSelectMenu({ customIds: "roles" }, replacement)
+    .toJSON();
+  const flat = flatten(edited);
+  assert.equal(flat.some((c) => c.type === ComponentType.RoleSelect && c.custom_id === "roles"), false);
+  assert.equal(flat.some((c) => c.type === ComponentType.Button && c.custom_id === "go"), true);
+});
+
+test("editor: setButtonStyle keeps payload valid across link switch", () => {
+  const edited = editComponents(makeBuilt())
+    .setButtonStyle("join", 1)
+    .setButtonStyle("close", 2)
+    .toJSON();
+  const buttons = flatten(edited).filter(
+    (c) => c.type === BUTTON && (c.custom_id === "join" || c.custom_id === "close"),
+  );
+  for (const b of buttons) {
+    assert.equal(b.style, b.custom_id === "join" ? 1 : 2);
+    assert.equal("url" in b, false);
+    assert.equal(typeof b.custom_id, "string");
+  }
+});
+
+test("editor: setButtonUrl converts to link button", () => {
+  const edited = editComponents(makeBuilt())
+    .setButtonUrl("join", "https://example.com")
+    .toJSON();
+  const btn = flatten(edited).find((c) => c.type === BUTTON && c.url === "https://example.com");
+  assert.equal(btn.style, 5);
+  assert.equal(btn.url, "https://example.com");
+  assert.equal("custom_id" in btn, false);
+});
+
+test("editor: setButtonEmoji sets from string and removes", () => {
+  let edited = editComponents(makeBuilt()).setButtonEmoji("join", "<:join:123>").toJSON();
+  let btn = flatten(edited).find((c) => c.type === BUTTON && c.custom_id === "join");
+  assert.deepEqual(btn.emoji, { name: "join", id: "123" });
+  edited = editComponents(edited).setButtonEmoji("join", undefined).toJSON();
+  btn = flatten(edited).find((c) => c.type === BUTTON && c.custom_id === "join");
+  assert.equal("emoji" in btn, false);
+});
+
+test("editor: renameCustomId renames everywhere and throws when missing", () => {
+  const edited = editComponents(makeMultiSelect()).renameCustomId("pick", "pick2").toJSON();
+  assert.equal(findStringSelect(edited).custom_id, "pick2");
+  assert.throws(() => editComponents(makeMultiSelect()).renameCustomId("nope", "x"));
+});
+
 test("editor: keepOnly keeps matching subtree", () => {
   const edited = editComponents(makeBuilt()).keepOnly("join").toJSON();
   const buttons = flatten(edited).filter((c) => c.type === BUTTON);
@@ -413,7 +604,7 @@ test("validate catches broken structures", () => {
 });
 
 test("parseEmoji variants", () => {
-  assert.deepEqual(parseEmoji("<:smile:123>"), { animated: false, name: "smile", id: "123" });
+  assert.deepEqual(parseEmoji("<:smile:123>"), { name: "smile", id: "123" });
   assert.deepEqual(parseEmoji("<a:dance:456>"), { animated: true, name: "dance", id: "456" });
   assert.deepEqual(parseEmoji("👍"), { name: "👍" });
 });

@@ -1,15 +1,23 @@
+import { ButtonStyle } from "discord-api-types/v10";
 import type { RawComponent } from "../core/constants";
+import { parseEmoji } from "../core/emoji";
 import {
   getChildren,
   hasCustomId,
   isActionRow,
+  isAnySelect,
   isButton,
+  isChannelSelect,
   isContainer as isContainerNode,
   isInteractive,
   isMediaGallery,
+  isMentionableSelect,
+  isRoleSelect,
   isSection,
   isSeparator,
+  isStringSelect,
   isTextDisplay,
+  isUserSelect,
 } from "../core/guards";
 import { findComponents, walkComponents, type ComponentRef } from "../core/walk";
 import { matchesSelector, type ComponentSelector } from "../core/selector";
@@ -98,6 +106,298 @@ function findFirstButton(roots: RawComponent[], customId: string): ComponentRef 
     }
   });
   return found;
+}
+
+/** Select-menu kinds, readable names matched by {@link SelectMenuMatchOptions.type}. */
+export type SelectMenuType = "string" | "user" | "role" | "channel" | "mentionable";
+
+export interface SelectMenuMatchOptions {
+  /** Restrict to these select kinds. Omit to match every select menu. */
+  type?: SelectMenuType | SelectMenuType[];
+  /** Restrict to these custom_ids. Omit to match every select of the given kinds. */
+  customIds?: string | string[];
+}
+
+const SELECT_GUARDS: Record<SelectMenuType, (c: RawComponent) => boolean> = {
+  string: isStringSelect,
+  user: isUserSelect,
+  role: isRoleSelect,
+  channel: isChannelSelect,
+  mentionable: isMentionableSelect,
+};
+
+/** True when the component is a select menu matching `type` and/or `custom_ids`. */
+export function matchesSelectMenu(
+  component: RawComponent,
+  options?: SelectMenuMatchOptions,
+): boolean {
+  if (!isAnySelect(component)) return false;
+
+  const types = options?.type
+    ? Array.isArray(options.type)
+      ? options.type
+      : [options.type]
+    : null;
+  if (types && !types.some((t) => SELECT_GUARDS[t](component))) return false;
+
+  const ids = options?.customIds
+    ? Array.isArray(options.customIds)
+      ? options.customIds
+      : [options.customIds]
+    : null;
+  if (ids) {
+    const cid = (component as { custom_id?: unknown }).custom_id;
+    if (typeof cid !== "string" || !ids.includes(cid)) return false;
+  }
+
+  return true;
+}
+
+/**
+ * Removes every select menu matching `type` and/or `custom_ids`.
+ * Selection menus live in action rows; rows left empty are pruned automatically.
+ */
+export function removeSelectMenus(
+  roots: RawComponent[],
+  options?: SelectMenuMatchOptions,
+): RawComponent[] {
+  return removeComponents(roots, (c) => matchesSelectMenu(c, options));
+}
+
+/**
+ * Clears the previously chosen values of matching select menus so the same
+ * menu can be triggered again: `default_values` is dropped from
+ * user/role/channel/mentionable selects and every string-select option is
+ * un-checked (`default` removed). Disabled state is left untouched.
+ */
+export function clearSelectValues(
+  roots: RawComponent[],
+  options?: SelectMenuMatchOptions,
+): RawComponent[] {
+  walkComponents(roots, ({ component }) => {
+    if (!matchesSelectMenu(component, options)) return;
+    const menu = component as { default_values?: unknown; options?: unknown[] };
+    if ("default_values" in menu) delete menu.default_values;
+    if (Array.isArray(menu.options)) {
+      for (const opt of menu.options) {
+        if (opt && typeof opt === "object" && "default" in opt) {
+          delete (opt as { default?: boolean }).default;
+        }
+      }
+    }
+  });
+  return roots;
+}
+
+/** Returns every select menu matching `type` and/or `custom_ids` (walking nested rows). */
+export function getSelectMenus(
+  roots: RawComponent[],
+  options?: SelectMenuMatchOptions,
+): RawComponent[] {
+  const out: RawComponent[] = [];
+  walkComponents(roots, ({ component }) => {
+    if (matchesSelectMenu(component, options)) out.push(component);
+  });
+  return out;
+}
+
+/** Returns the first select menu matching `type` and/or `custom_ids`, or null. */
+export function findSelectMenu(
+  roots: RawComponent[],
+  options?: SelectMenuMatchOptions,
+): RawComponent | null {
+  return getSelectMenus(roots, options)[0] ?? null;
+}
+
+/** Replaces the first select menu matching `options` with `replacement` in place. */
+export function replaceSelectMenu(
+  roots: RawComponent[],
+  options: SelectMenuMatchOptions,
+  replacement: RawComponent,
+): RawComponent[] {
+  const ref = findComponents(roots, (c) => matchesSelectMenu(c, options))[0];
+  if (!ref) throw new Error(`replaceSelectMenu: no select menu matched the options`);
+  if (ref.kind === "root") {
+    const i = roots.indexOf(ref.component);
+    if (i !== -1) roots[i] = replacement;
+  } else if (ref.siblings) {
+    const i = ref.siblings.indexOf(ref.component);
+    if (i !== -1) ref.siblings[i] = replacement;
+  }
+  return roots;
+}
+
+/** Enables/disables matching select menus. */
+export function setSelectDisabled(
+  roots: RawComponent[],
+  options?: SelectMenuMatchOptions,
+  disabled = true,
+): RawComponent[] {
+  walkComponents(roots, ({ component }) => {
+    if (matchesSelectMenu(component, options)) {
+      (component as { disabled?: boolean }).disabled = disabled;
+    }
+  });
+  return roots;
+}
+
+/** Friendly option shape accepted by {@link setSelectOptions}. */
+export interface SelectOptionInput {
+  label: string;
+  value: string;
+  description?: string;
+  /** Accepts "👍", ":name:", "<:name:id>", "<a:name:id>". */
+  emoji?: string;
+  default?: boolean;
+}
+
+/** Replaces the options of a string select found by custom_id. */
+export function setSelectOptions(
+  roots: RawComponent[],
+  customId: string,
+  options: SelectOptionInput[],
+): RawComponent[] {
+  const select = findSelectMenu(roots, { customIds: customId });
+  if (!select || !isStringSelect(select)) {
+    throw new Error(`setSelectOptions: string select with custom_id "${customId}" not found`);
+  }
+  select.options = options.map((opt) => ({
+    label: opt.label,
+    value: opt.value,
+    default: opt.default ?? false,
+    ...(opt.description ? { description: opt.description } : {}),
+    ...(opt.emoji ? { emoji: parseEmoji(opt.emoji) } : {}),
+  }));
+  return roots;
+}
+
+/** Sets (or removes, when `undefined`) the placeholder of a select by custom_id. */
+export function setSelectPlaceholder(
+  roots: RawComponent[],
+  customId: string,
+  placeholder?: string,
+): RawComponent[] {
+  const select = mustSelect(roots, customId, "setSelectPlaceholder");
+  if (placeholder !== undefined) {
+    (select as { placeholder?: string }).placeholder = placeholder;
+  } else {
+    delete (select as { placeholder?: string }).placeholder;
+  }
+  return roots;
+}
+
+/** Sets (or removes, when `undefined`) the min/max values of a select by custom_id. */
+export function setSelectMinMaxValues(
+  roots: RawComponent[],
+  customId: string,
+  min?: number,
+  max?: number,
+): RawComponent[] {
+  const select = mustSelect(roots, customId, "setSelectMinMaxValues");
+  if (min === undefined) {
+    delete (select as { min_values?: number }).min_values;
+  } else {
+    (select as { min_values?: number }).min_values = min;
+  }
+  if (max === undefined) {
+    delete (select as { max_values?: number }).max_values;
+  } else {
+    (select as { max_values?: number }).max_values = max;
+  }
+  return roots;
+}
+
+function mustSelect(
+  roots: RawComponent[],
+  customId: string,
+  caller: string,
+): RawComponent {
+  const select = findSelectMenu(roots, { customIds: customId });
+  if (!select) throw new Error(`${caller}: select with custom_id "${customId}" not found`);
+  return select;
+}
+
+// --- Buttons ---------------------------------------------------------------
+
+/** Changes the style of a button found by custom_id, keeping the payload valid. */
+export function setButtonStyle(
+  roots: RawComponent[],
+  customId: string,
+  style: number,
+): RawComponent[] {
+  const ref = findFirstButton(roots, customId);
+  if (!ref) throw new Error(`setButtonStyle: button with custom_id "${customId}" not found`);
+  const btn = ref.component as { style: number; custom_id?: string; url?: string };
+  btn.style = style;
+  if (style === ButtonStyle.Link) {
+    delete btn.custom_id; // link buttons must not have a custom_id
+  } else {
+    delete btn.url; // non-link buttons must not carry a url
+  }
+  return roots;
+}
+
+/** Sets (or removes, when `undefined`) the emoji of a button by custom_id. */
+export function setButtonEmoji(
+  roots: RawComponent[],
+  customId: string,
+  emoji?: string,
+): RawComponent[] {
+  const ref = findFirstButton(roots, customId);
+  if (!ref) throw new Error(`setButtonEmoji: button with custom_id "${customId}" not found`);
+  const btn = ref.component as { emoji?: unknown; custom_id?: string; url?: string; style?: number };
+  if (emoji === undefined) {
+    delete btn.emoji;
+  } else {
+    btn.emoji = parseEmoji(emoji) as unknown;
+  }
+  return roots;
+}
+
+/**
+ * Sets the target URL of a button by custom_id. Setting a URL converts the
+ * button into a Link button (custom_id removed); `undefined` removes the URL.
+ */
+export function setButtonUrl(
+  roots: RawComponent[],
+  customId: string,
+  url?: string,
+): RawComponent[] {
+  const ref = findFirstButton(roots, customId);
+  if (!ref) throw new Error(`setButtonUrl: button with custom_id "${customId}" not found`);
+  const btn = ref.component as {
+    style?: number;
+    url?: string;
+    custom_id?: string;
+  };
+  if (url === undefined) {
+    delete btn.url;
+  } else {
+    btn.url = url;
+    btn.style = ButtonStyle.Link;
+    delete btn.custom_id;
+  }
+  return roots;
+}
+
+/** Renames the custom_id on every matching component; throws if nothing matched. */
+export function renameCustomId(
+  roots: RawComponent[],
+  from: string,
+  to: string,
+): RawComponent[] {
+  let renamed = 0;
+  walkComponents(roots, ({ component }) => {
+    const cid = (component as { custom_id?: unknown }).custom_id;
+    if (typeof cid === "string" && cid === from) {
+      (component as { custom_id: string }).custom_id = to;
+      renamed += 1;
+    }
+  });
+  if (renamed === 0) {
+    throw new Error(`renameCustomId: no component with custom_id "${from}"`);
+  }
+  return roots;
 }
 
 /**
