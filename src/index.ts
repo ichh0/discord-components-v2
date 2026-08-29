@@ -42,6 +42,20 @@ export type { ValidationResult } from "./core/validate";
 // Builder
 export { parseComponents, parseEmoji, V2Builder } from "./builder/V2Builder";
 export type { V2Payload } from "./builder/V2Builder";
+export { V2ModalBuilder } from "./builder/V2ModalBuilder";
+export type {
+  ChannelSelectMenuData,
+  MentionableSelectMenuData,
+  RadioGroupData,
+  RadioGroupOptionData,
+  RoleSelectMenuData,
+  SelectMenuBaseData,
+  StringSelectMenuData,
+  StringSelectOptionData,
+  TextInputData,
+  UserSelectMenuData,
+  V2ModalBuilderOptions,
+} from "./builder/V2ModalBuilder";
 export type {
   ButtonOptions,
   ButtonStyleName,

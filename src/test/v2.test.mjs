@@ -1,30 +1,30 @@
-import test from "node:test";
 import assert from "node:assert/strict";
+import test from "node:test";
 import {
-  V2Builder,
+  ComponentType,
   editComponents,
+  findComponents,
+  getActionRow,
+  getActionRows,
+  getMediaGalleries,
+  getSection,
+  getSections,
+  getSeparator,
+  getSeparators,
+  getTextDisplays,
+  moveSection,
+  moveSeparator,
   parseComponents,
   parseEmoji,
-  ComponentType,
-  findComponents,
-  validateComponents,
-  getSections,
-  getSection,
-  removeSection,
-  replaceSection,
-  moveSection,
-  getSeparators,
-  getSeparator,
-  removeSeparator,
-  replaceSeparator,
-  moveSeparator,
-  getActionRows,
-  getActionRow,
   removeActionRow,
-  getTextDisplays,
-  removeTextDisplay,
-  getMediaGalleries,
   removeMediaGallery,
+  removeSection,
+  removeSeparator,
+  removeTextDisplay,
+  replaceSection,
+  replaceSeparator,
+  V2Builder,
+  validateComponents,
 } from "../../dist/index.js";
 
 const CONTAINER = ComponentType.Container;
@@ -104,7 +104,9 @@ test("media registers attachment file", () => {
   const b = new V2Builder().media(Buffer.from([1]), "pic.png");
   const payload = b.build();
   assert.equal(payload.files[0].name, "pic.png");
-  const gallery = payload.components[0].components.find((c) => c.type === ComponentType.MediaGallery);
+  const gallery = payload.components[0].components.find(
+    (c) => c.type === ComponentType.MediaGallery,
+  );
   assert.equal(gallery.items[0].media.url, "attachment://pic.png");
 });
 
@@ -128,11 +130,29 @@ test("parse: accepts message-like objects and toJSON duck-typing", () => {
 test("parse: every ergonomic entry path yields a clean container (no indexed junk)", () => {
   const children = [
     { type: TEXT, id: 2, content: "123123" },
-    { type: ROW, id: 3, components: [{ type: BUTTON, style: 2, label: "213", id: 4, custom_id: "a_" }] },
-    { type: ROW, id: 5, components: [{ type: BUTTON, style: 2, label: "213", id: 6, custom_id: "a__" }] },
-    { type: ROW, id: 7, components: [{ type: BUTTON, style: 2, label: "213", id: 8, custom_id: "a___" }] },
+    {
+      type: ROW,
+      id: 3,
+      components: [{ type: BUTTON, style: 2, label: "213", id: 4, custom_id: "a_" }],
+    },
+    {
+      type: ROW,
+      id: 5,
+      components: [{ type: BUTTON, style: 2, label: "213", id: 6, custom_id: "a__" }],
+    },
+    {
+      type: ROW,
+      id: 7,
+      components: [{ type: BUTTON, style: 2, label: "213", id: 8, custom_id: "a___" }],
+    },
   ];
-  const container = { type: CONTAINER, id: 1, accent_color: null, spoiler: false, components: children };
+  const container = {
+    type: CONTAINER,
+    id: 1,
+    accent_color: null,
+    spoiler: false,
+    components: children,
+  };
 
   const paths = [
     ["children array", children],
@@ -150,7 +170,11 @@ test("parse: every ergonomic entry path yields a clean container (no indexed jun
     assert.equal(root.type, CONTAINER, name);
     // no numeric-key garbage like {"0": {...}} next to an empty components
     for (const key of Object.keys(root)) {
-      assert.match(key, /^(type|id|accent_color|spoiler|components)$/, `${name}: junk key "${key}"`);
+      assert.match(
+        key,
+        /^(type|id|accent_color|spoiler|components)$/,
+        `${name}: junk key "${key}"`,
+      );
     }
     assert.ok(Array.isArray(root.components), name);
     assert.equal(root.components.length, 4, name);
@@ -188,14 +212,28 @@ function makeFetchedReply() {
           {
             type: ComponentType.Section,
             id: 3,
-            accessory: { type: BUTTON, id: 5, custom_id: "test2", style: 2, label: "test", disabled: true },
+            accessory: {
+              type: BUTTON,
+              id: 5,
+              custom_id: "test2",
+              style: 2,
+              label: "test",
+              disabled: true,
+            },
             components: [{ type: TEXT, id: 4, content: "**hello**" }],
           },
           {
             type: ROW,
             id: 6,
             components: [
-              { type: BUTTON, id: 7, custom_id: "fff", style: 2, label: "dsbButtons", disabled: true },
+              {
+                type: BUTTON,
+                id: 7,
+                custom_id: "fff",
+                style: 2,
+                label: "dsbButtons",
+                disabled: true,
+              },
             ],
           },
           {
@@ -236,7 +274,9 @@ test("parse: unwraps full fetched Message objects (regression: type must not be 
   assert.equal(edited[0].type, CONTAINER);
 
   // snake_case raw API shape is unwrapped the same way
-  edited = editComponents([{ ...fetched }]).disableButtons().toJSON();
+  edited = editComponents([{ ...fetched }])
+    .disableButtons()
+    .toJSON();
   assert.equal(edited[0].type, CONTAINER);
 
   // parseComponents works too and keeps plain content
@@ -316,7 +356,10 @@ test("editor: keepOnly keeps matching subtree", () => {
   assert.equal(buttons[0].custom_id, "join");
   // container + its row survive, texts and select row are gone
   assert.equal(edited.length, 1);
-  assert.deepEqual(flatten(edited).map((c) => c.type), [CONTAINER, ROW, BUTTON]);
+  assert.deepEqual(
+    flatten(edited).map((c) => c.type),
+    [CONTAINER, ROW, BUTTON],
+  );
 });
 
 test("editor: section accessory button gets disabled too", () => {
@@ -526,9 +569,7 @@ test("moveSection: returns false when from is out-of-bounds", () => {
 });
 
 test("section management: chaining works", () => {
-  const builder = makeSectionsBuilder()
-    .removeSection(1)
-    .moveSection(0, 1);
+  const builder = makeSectionsBuilder().removeSection(1).moveSection(0, 1);
   const sections = builder.getSections();
   assert.equal(sections.length, 2);
   // removeSection(1) → removes Second; remaining: [First, Third]
@@ -660,10 +701,7 @@ test("moveSeparator: reorders separators", () => {
 });
 
 test("removeSeparator: chain of removals keeps build() valid", () => {
-  const builder = makeSeparatorsBuilder()
-    .removeSeparator(0)
-    .removeSeparator(0)
-    .removeSeparator(0);
+  const builder = makeSeparatorsBuilder().removeSeparator(0).removeSeparator(0).removeSeparator(0);
   assert.equal(builder.getSeparators().length, 1);
   const payload = builder.build(); // must not throw
   assert.equal(payload.components[0].components.filter((c) => c.type === SEP).length, 1);
@@ -724,10 +762,7 @@ test("getMediaGalleries / removeMediaGallery", () => {
 
 test("layout management: robust to full removal via editor", () => {
   const editor = editComponents(makeSeparatorsBuilder().toJSON());
-  editor
-    .removeSeparator(0)
-    .removeSeparator(0)
-    .removeTextDisplay(0);
+  editor.removeSeparator(0).removeSeparator(0).removeTextDisplay(0);
 
   const payload = editor.toJSON();
   assert.equal(validateComponents(payload).valid, true);
