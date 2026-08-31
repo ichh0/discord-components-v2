@@ -90,40 +90,14 @@ export {
   disableButtons,
   enableButtons,
   findSelectMenu,
-  getActionRow,
-  getActionRows,
-  getMediaGallery,
-  getMediaGalleries,
-  getSection,
-  getSections,
   getSelectMenus,
-  getSeparator,
-  getSeparators,
   getTextContents,
-  getTextDisplay,
-  getTextDisplays,
-  keepOnly,
   matchesSelectMenu,
-  moveActionRow,
-  moveMediaGallery,
-  moveSection,
-  moveSeparator,
-  moveTextDisplay,
-  removeActionRow,
   removeComponents,
-  removeMediaGallery,
-  removeSection,
   removeSelectMenus,
-  removeSeparator,
-  removeTextDisplay,
   renameCustomId,
-  replaceActionRow,
-  replaceMediaGallery,
-  replaceSection,
   replaceSelectMenu,
-  replaceSeparator,
   replaceText,
-  replaceTextDisplay,
   setButtonEmoji,
   setButtonLabel,
   setButtonStyle,
@@ -135,18 +109,28 @@ export {
   setSelectPlaceholder,
 } from "./edit/operations";
 export type {
-  ActionRowRef,
   DisableOptions,
-  IndexedChildRef,
-  MediaGalleryRef,
   RemoveOptions,
-  SectionRef,
   SelectMenuMatchOptions,
   SelectMenuType,
   SelectOptionInput,
-  SeparatorRef,
-  TextDisplayRef,
 } from "./edit/operations";
+
+// Kind-indexed container-child management
+export {
+  getAllByKind,
+  getByKind,
+  isComponentKind,
+  kindOfType,
+  removeByKind,
+  replaceByKind,
+  type KindGroup,
+} from "./edit/kinds";
+export type { ComponentKind, IndexedChildRef, KindTarget } from "./edit/kinds";
+
+// Rare whole-tree manipulations live in "discordjs-components-v2/lib/advanced"
+// ({ keepOnly, moveByKind }); V2Template and V2Paginator live in
+// "discordjs-components-v2/lib/template" and "discordjs-components-v2/lib/pagination".
 
 // Convenience re-exports of raw API types consumers commonly need
 export type {

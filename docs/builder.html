@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="dark light" />
+  <title>V2Builder — discordjs-components-v2</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%232f6bff'/%3E%3Cstop offset='1' stop-color='%237fb0ff'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='100' height='100' rx='24' fill='url(%23g)'/%3E%3Ctext x='50' y='70' font-family='Arial' font-size='52' font-weight='900' fill='white' text-anchor='middle'%3EC2%3C/text%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+  <script defer src="js/prism/prism-core.min.js"></script>
+  <script defer src="js/prism/prism-clike.min.js"></script>
+  <script defer src="js/prism/prism-javascript.min.js"></script>
+  <script defer src="js/prism/prism-typescript.min.js"></script>
+  <script defer src="js/prism/prism-bash.min.js"></script>
+  <script defer src="js/prism/prism-json.min.js"></script>
+  <script defer src="js/prism/prism-markup.min.js"></script>
+  <script defer src="js/main.js"></script>
+</head>
+<body>
+
+  <nav class="navbar">
+    <a class="brand" href="index.html"><span class="brand-logo">C2</span>discordjs-components-v2</a>
+    <div class="nav-links">
+      <a href="index.html">Документация</a>
+      <a href="pagination.html">Пагинация</a>
+    </div>
+    <button class="icon-btn hamburger" id="sidebar-toggle" type="button" aria-label="Меню">☰</button>
+    <div class="nav-right">
+      <button class="icon-btn" id="theme-toggle" type="button" aria-label="Сменить тему" title="Сменить тему">
+        <span class="icon-dark" aria-hidden="true">🌙</span>
+        <span class="icon-light" aria-hidden="true">☀️</span>
+      </button>
+      <span class="nav-version">v2.2.0</span>
+    </div>
+  </nav>
+
+  <div class="layout">
+    <nav class="sidebar">
+      <p class="sidebar-title">Начало</p>
+      <div class="sidebar-nav">
+        <a href="index.html"><span class="nav-ico" aria-hidden="true">🏠</span>Введение</a>
+        <a href="getting-started.html"><span class="nav-ico" aria-hidden="true">🚀</span>Установка и быстрый старт</a>
+      </div>
+      <p class="sidebar-title">Библиотека</p>
+      <div class="sidebar-nav">
+        <a class="active" href="builder.html"><span class="nav-ico" aria-hidden="true">🧱</span>V2Builder</a>
+        <a href="parsing.html"><span class="nav-ico" aria-hidden="true">♻️</span>Разбор без кэша</a>
+        <a href="editing.html"><span class="nav-ico" aria-hidden="true">✂️</span>Редактирование</a>
+        <a href="layout.html"><span class="nav-ico" aria-hidden="true">🗂️</span>Секции и layout</a>
+        <a href="template.html"><span class="nav-ico" aria-hidden="true">🧩</span>Шаблоны и пагинация</a>
+        <a href="modal.html"><span class="nav-ico" aria-hidden="true">📝</span>Модальные окна</a>
+        <a href="customid.html"><span class="nav-ico" aria-hidden="true">🆔</span>customId и состояние</a>
+        <a href="validation.html"><span class="nav-ico" aria-hidden="true">🛡️</span>Валидация</a>
+      </div>
+      <p class="sidebar-title">Паттерны</p>
+      <div class="sidebar-nav">
+        <a href="pagination.html"><span class="nav-ico" aria-hidden="true">📄</span>Пагинация вручную</a>
+      </div>
+    </nav>
+
+    <div class="sidebar-mask" id="sidebar-mask"></div>
+
+    <main class="content">
+      <div class="page-hero">
+        <p class="kicker">Builder</p>
+        <h1>V2Builder</h1>
+        <p class="tagline">Декларативная сборка сообщений Components V2: текст, layout, интерактив.</p>
+      </div>
+
+      <div class="toc">
+        <strong>Содержание</strong>
+        <ul>
+          <li><a href="#text">Текст и контент</a></li>
+          <li><a href="#layout">Layout-компоненты</a></li>
+          <li><a href="#interactive">Кнопки и селекты</a></li>
+          <li><a href="#container">Свойства контейнера</a></li>
+          <li><a href="#reference">Сводная таблица</a></li>
+        </ul>
+      </div>
+
+      <h2 id="text">Текст и контент</h2>
+      <p>
+        У сообщения есть два «текстовых» уровня: <strong>plain-контент</strong> над
+        компонентами и <strong>TextDisplay</strong> — markdown-блоки внутри контейнера.
+        Контент задаётся методами ниже.
+      </p>
+
+      <div class="code-block">
+        <div class="code-header"><span class="lang">ts</span><button class="copy-btn" type="button"><span aria-hidden="true">⧉</span> Копировать</button></div>
+        <pre><code class="language-ts">new V2Builder()
+  .content("Сообщение над компонентами")  // plain, вне контейнера
+  .text("# Заголовок в TextDisplay")      // markdown-блок
+  .field("Приз", "100 монет")             // "**Приз**\n100 монет"
+  .field("Число", "7", true)              // inline: "**Число** 7"
+  .fields([
+    { name: "Участников", value: "0" },
+    { name: "До конца", value: "&lt;t:1735689600:R&gt;" },
+  ]);</code></pre>
+      </div>
+
+      <p>
+        <code>.fields()</code> рисует выровненную двухколоночную таблицу в ANSI-codeblock —
+        идеально для «статов» с числами. Пустой массив просто ничего не добавляет.
+      </p>
+
+      <h2 id="layout">Layout-компоненты</h2>
+
+      <h3>Section</h3>
+      <p>Секция — это заголовок с контентом и обязательным «аксессуаром»: кнопкой или thumbnail.</p>
+      <div class="code-block">
+        <div class="code-header"><span class="lang">ts</span><button class="copy-btn" type="button"><span aria-hidden="true">⧉</span> Копировать</button></div>
+        <pre><code class="language-ts">new V2Builder()
+  .section({ title: "🏆 Топ-1", content: "Поздравляем!", button: { id: "top:claim", label: "Получить" } })
+  .section({ title: "Картинка", thumbnailUrl: "https://example.com/img.png", thumbnailDescription: "подпись", spoiler: true })
+  // thumbnailUrl + button одновременно — кинут ошибку</code></pre>
+      </div>
+
+      <h3>Разделители</h3>
+      <div class="code-block">
+        <div class="code-header"><span class="lang">ts</span><button class="copy-btn" type="button"><span aria-hidden="true">⧉</span> Копировать</button></div>
+        <pre><code class="language-ts">new V2Builder()
+  .separator()                 // small, с линией
+  .separator("large")          // большой отступ
+  .separator("medium", false); // отступ без разделительной линии</code></pre>
+      </div>
+
+      <h3>Галереи и вложения</h3>
+      <div class="code-block">
+        <div class="code-header"><span class="lang">ts</span><button class="copy-btn" type="button"><span aria-hidden="true">⧉</span> Копировать</button></div>
+        <pre><code class="language-ts">new V2Builder()
+  .gallery(["https://a.png", { url: "https://b.png", description: "подпись", spoiler: true }])
+  .media(Buffer.from(...), "screenshot.png")   // attachment::// + галерея
+  .mediaUrl("https://c.png", "одна картинка")
+  .file(Buffer.from(...), "file.bin", true);   // File-компонент + files</code></pre>
+      </div>
+
+      <h2 id="interactive">Кнопки и селекты</h2>
+
+      <h3>Кнопки</h3>
+      <p>Один ряд — до 5 кнопок. Три вида: с <code>id</code>, с <code>url</code>, со <code>skuId</code>.</p>
+      <div class="code-block">
+        <div class="code-header"><span class="lang">ts</span><button class="copy-btn" type="button"><span aria-hidden="true">⧉</span> Копировать</button></div>
+        <pre><code class="language-ts">new V2Builder().buttons(
+  { id: "join", label: "Войти", style: "Success", emoji: "🎟️" },
+  { id: "dm", label: "В ЛС", style: "Secondary", disabled: true },
+  { url: "https://example.com", label: "Сайт" },
+  { emoji: "⭐", style: "Primary" },          // можно только эмодзи
+);
+// больше 5 кнопок в ряду → ошибка</code></pre>
+      </div>
+      <p>
+        <code>style</code> — строка: <code>"Primary" | "Secondary" | "Success" | "Danger" | "Link" | "Premium"</code>.
+      </p>
+
+      <h3>Селект-меню</h3>
+      <p>Каждый селект — отдельный ряд. Доступно через пространство имён <code>selectMenu</code>:</p>
+      <div class="code-block">
+        <div class="code-header"><span class="lang">ts</span><button class="copy-btn" type="button"><span aria-hidden="true">⧉</span> Копировать</button></div>
+        <pre><code class="language-ts">new V2Builder()
+  .selectMenu.string({ customId: "cat", placeholder: "Категория", options: [
+    { label: "Игры", value: "games", emoji: "🎮", description: "...", default: true },
+  ]})
+  .selectMenu.user({ customId: "pick", placeholder: "Кто?" })
+  .selectMenu.role({ customId: "role" })
+  .selectMenu.mentionable({ customId: "mention" })
+  .selectMenu.channel({ customId: "chan", channelTypes: [0] });</code></pre>
+      </div>
+      <p>
+        Общие опции: <code>placeholder</code>, <code>minValues</code>, <code>maxValues</code>,
+        <code>disabled</code>. Эмодзи принимаются строкой: <code>"👍"</code>, <code>":name:"</code>,
+        <code>"&lt;:name:id&gt;"</code>, <code>"&lt;a:name:id&gt;"</code>.
+      </p>
+
+      <h2 id="container">Свойства контейнера</h2>
+      <div class="code-block">
+        <div class="code-header"><span class="lang">ts</span><button class="copy-btn" type="button"><span aria-hidden="true">⧉</span> Копировать</button></div>
+        <pre><code class="language-ts">new V2Builder()
+  .color(0xffaa00)      // акцентная полоска слева
+  .spoiler(true)        // спойлер-обёртка всего контейнера
+  .setId(42);           // числовой id контейнера (для апи)</code></pre>
+      </div>
+
+      <h2 id="reference">Сводная таблица</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Метод</th><th>Что делает</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>.text(md)</code></td><td>TextDisplay с markdown</td></tr>
+            <tr><td><code>.content(str)</code></td><td>plain-контент над компонентами</td></tr>
+            <tr><td><code>.field(name, value, inline?)</code></td><td>пара «имя — значение»</td></tr>
+            <tr><td><code>.fields([...])</code></td><td>двухколоночная таблица в ```ansi```</td></tr>
+            <tr><td><code>.buttons(...)</code></td><td>ряд из ≤ 5 кнопок (<code>id</code>/<code>url</code>/<code>skuId</code>)</td></tr>
+            <tr><td><code>.selectMenu.*(...)</code></td><td>селект отдельным рядом</td></tr>
+            <tr><td><code>.section({...})</code></td><td>Section с thumbnail или кнопкой</td></tr>
+            <tr><td><code>.gallery(urls | items)</code></td><td>MediaGallery до 10 картинок</td></tr>
+            <tr><td><code>.media(buffer, name?)</code></td><td>attachment + галерея <code>attachment://…</code></td></tr>
+            <tr><td><code>.mediaUrl(url, desc?, spoiler?)</code></td><td>галерея из одной картинки</td></tr>
+            <tr><td><code>.file(payload, name?, spoiler?)</code></td><td>File-компонент + вложение</td></tr>
+            <tr><td><code>.separator(size?, divider?)</code></td><td>разделитель</td></tr>
+            <tr><td><code>.color(hex)</code> / <code>.spoiler(bool)</code></td><td>акцент / спойлер контейнера</td></tr>
+            <tr><td><code>.setId(n)</code></td><td>числовой id контейнера</td></tr>
+            <tr><td><code>.clear()</code> / <code>.getAttachments()</code></td><td>сброс состояния / файлы</td></tr>
+            <tr><td><code>.build()</code></td><td>валидирует и возвращает payload</td></tr>
+            <tr><td><code>.send(target, opts?)</code></td><td>отправка через reply/editReply/followUp/edit</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout info">
+        <div class="callout-title">ℹ️ Редактирование прямо на билдере</div>
+        <p>
+          Всё, что описано на странице «Редактирование», доступно и как методы билдера:
+          <code>disableButtons</code>, <code>setButtonLabel</code>, <code>replaceText</code>,
+          <code>remove</code>, <code>renameCustomId</code> и т.д. Посекционное управление —
+          тоже: <code>builder.all("section")</code>, <code>builder.sections.remove(1)</code>.
+        </p>
+      </div>
+
+      <div class="pagination-nav">
+        <a class="page-link" href="getting-started.html"><small>Назад</small>← Установка и быстрый старт</a>
+        <a class="page-link next" href="parsing.html"><small>Далее</small>Разбор без кэша →</a>
+      </div>
+    </main>
+  </div>
+
+</body>
+</html>

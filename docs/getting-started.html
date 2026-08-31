@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="dark light" />
+  <title>Установка и быстрый старт — discordjs-components-v2</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%232f6bff'/%3E%3Cstop offset='1' stop-color='%237fb0ff'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='100' height='100' rx='24' fill='url(%23g)'/%3E%3Ctext x='50' y='70' font-family='Arial' font-size='52' font-weight='900' fill='white' text-anchor='middle'%3EC2%3C/text%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+  <script defer src="js/prism/prism-core.min.js"></script>
+  <script defer src="js/prism/prism-clike.min.js"></script>
+  <script defer src="js/prism/prism-javascript.min.js"></script>
+  <script defer src="js/prism/prism-typescript.min.js"></script>
+  <script defer src="js/prism/prism-bash.min.js"></script>
+  <script defer src="js/prism/prism-json.min.js"></script>
+  <script defer src="js/prism/prism-markup.min.js"></script>
+  <script defer src="js/main.js"></script>
+</head>
+<body>
+
+  <nav class="navbar">
+    <a class="brand" href="index.html"><span class="brand-logo">C2</span>discordjs-components-v2</a>
+    <div class="nav-links">
+      <a href="index.html">Документация</a>
+      <a href="pagination.html">Пагинация</a>
+    </div>
+    <button class="icon-btn hamburger" id="sidebar-toggle" type="button" aria-label="Меню">☰</button>
+    <div class="nav-right">
+      <button class="icon-btn" id="theme-toggle" type="button" aria-label="Сменить тему" title="Сменить тему">
+        <span class="icon-dark" aria-hidden="true">🌙</span>
+        <span class="icon-light" aria-hidden="true">☀️</span>
+      </button>
+      <span class="nav-version">v2.2.0</span>
+    </div>
+  </nav>
+
+  <div class="layout">
+    <nav class="sidebar">
+      <p class="sidebar-title">Начало</p>
+      <div class="sidebar-nav">
+        <a href="index.html"><span class="nav-ico" aria-hidden="true">🏠</span>Введение</a>
+        <a class="active" href="getting-started.html"><span class="nav-ico" aria-hidden="true">🚀</span>Установка и быстрый старт</a>
+      </div>
+      <p class="sidebar-title">Библиотека</p>
+      <div class="sidebar-nav">
+        <a href="builder.html"><span class="nav-ico" aria-hidden="true">🧱</span>V2Builder</a>
+        <a href="parsing.html"><span class="nav-ico" aria-hidden="true">♻️</span>Разбор без кэша</a>
+        <a href="editing.html"><span class="nav-ico" aria-hidden="true">✂️</span>Редактирование</a>
+        <a href="layout.html"><span class="nav-ico" aria-hidden="true">🗂️</span>Секции и layout</a>
+        <a href="template.html"><span class="nav-ico" aria-hidden="true">🧩</span>Шаблоны и пагинация</a>
+        <a href="modal.html"><span class="nav-ico" aria-hidden="true">📝</span>Модальные окна</a>
+        <a href="customid.html"><span class="nav-ico" aria-hidden="true">🆔</span>customId и состояние</a>
+        <a href="validation.html"><span class="nav-ico" aria-hidden="true">🛡️</span>Валидация</a>
+      </div>
+      <p class="sidebar-title">Паттерны</p>
+      <div class="sidebar-nav">
+        <a href="pagination.html"><span class="nav-ico" aria-hidden="true">📄</span>Пагинация вручную</a>
+      </div>
+    </nav>
+
+    <div class="sidebar-mask" id="sidebar-mask"></div>
+
+    <main class="content">
+      <div class="page-hero">
+        <p class="kicker">Getting started</p>
+        <h1>Установка и быстрый старт</h1>
+        <p class="tagline">Первый компонент V2 — меньше чем за минуту.</p>
+      </div>
+
+      <h2>Установка</h2>
+      <p>Либа не зависит от discord.js в рантайме, но нужны типы API:</p>
+      <div class="code-block">
+        <div class="code-header"><span class="lang">bash</span><button class="copy-btn" type="button"><span aria-hidden="true">⧉</span> Копировать</button></div>
+        <pre><code class="language-bash">npm install discordjs-components-v2 discord-api-types</code></pre>
+      </div>
+
+      <p>Peer-зависимости для полноценной интеграции:</p>
+      <ul>
+        <li>TypeScript ≥ 5.0</li>
+        <li>discord.js ≥ 14.27 (для отправки и интеракций)</li>
+        <li>discord-api-types ≥ 0.38.8</li>
+      </ul>
+
+      <h2>Первый builder</h2>
+      <p>
+        <code>V2Builder</code> — декларативная сборка. Каждый метод возвращает <code>this</code>,
+        поэтому всё можно чейнить. <code>build()</code> в конце валидирует дерево и возвращает
+        готовый payload для отправки.
+      </p>
+
+      <div class="code-block">
+        <div class="code-header"><span class="lang">ts</span><button class="copy-btn" type="button"><span aria-hidden="true">⧉</span> Копировать</button></div>
+        <pre><code class="language-ts">import { V2Builder } from "discordjs-components-v2";
+
+const payload = new V2Builder()
+  .color(0xffaa00)
+  .text("# 🎉 Розыгрыш")
+  .field("Приз", "100 монет")
+  .fields([
+    { name: "Участников", value: "0" },
+    { name: "До конца", value: "&lt;t:1735689600:R&gt;" },
+  ])
+  .buttons(
+    { id: "join", label: "Участвовать", style: "Success", emoji: "🎟️" },
+    { url: "https://example.com", label: "Правила" },
+  )
+  .selectMenu.string({
+    customId: "category",
+    placeholder: "Категория приза",
+    options: [
+      { label: "Игры", value: "games", emoji: "🎮" },
+      { label: "Скины", value: "skins" },
+    ],
+  })
+  .build(); // → { components, files?, flags: 32768 }
+
+await interaction.reply(payload);</code></pre>
+      </div>
+
+      <p>Что вернул <code>build()</code>:</p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Поле</th>
+              <th>Описание</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td><code>components</code></td><td>массив из одного root-контейнера в формате API</td></tr>
+            <tr><td><code>flags</code></td><td>32 768 (<code>IS_COMPONENTS_V2</code>) — обязательно для CV2</td></tr>
+            <tr><td><code>content?</code></td><td>plain-текст над компонентами, если задан</td></tr>
+            <tr><td><code>files?</code></td><td>вложения из <code>.file()</code> / <code>.media()</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout info">
+        <div class="callout-title">ℹ️ Flag IS_COMPONENTS_V2</div>
+        <p>
+          Без флага 32 768 Discord вернёт ошибку <code>UNION_TYPE_CHOICES</code>. Библиотека ставит
+          его автоматически в <code>build()</code>.
+        </p>
+      </div>
+
+      <h2>Отправка через <code>send()</code></h2>
+      <p>
+        Вместо ручного раскидывания payload есть <code>builder.send(target)</code>. Он сам
+        выбирает способ ответа в зависимости от состояния интеракции:
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Состояние target</th><th>Что вызовется</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>интеракция, ещё не отвечена</td><td><code>interaction.reply(...)</code></td></tr>
+            <tr><td>интеракция с <code>replied</code>/<code>deferred</code></td><td><code>interaction.editReply(...)</code></td></tr>
+            <tr><td>любой target с <code>followUp</code></td><td><code>interaction.followUp(...)</code></td></tr>
+            <tr><td>сообщение (<code>msg.edit</code>)</td><td><code>message.edit(...)</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="code-block">
+        <div class="code-header"><span class="lang">ts</span><button class="copy-btn" type="button"><span aria-hidden="true">⧉</span> Копировать</button></div>
+        <pre><code class="language-ts">// эфемерный ответ первой командой
+await builder.send(interaction, { ephemeral: true });
+
+// отдельные доп. флаги
+await builder.send(interaction, { extraFlags: 1 &lt;&lt; 15 });</code></pre>
+      </div>
+
+      <h2>Полный пример с discordx</h2>
+      <div class="code-block">
+        <div class="code-header"><span class="lang">ts</span><button class="copy-btn" type="button"><span aria-hidden="true">⧉</span> Копировать</button></div>
+        <pre><code class="language-ts">import { Discord, Slash } from "discordx";
+import type { CommandInteraction } from "discord.js";
+import { V2Builder } from "discordjs-components-v2";
+
+@Discord()
+class News {
+  @Slash({ name: "news", description: "Показать новость" })
+  async news(interaction: CommandInteraction) {
+    const builder = new V2Builder()
+      .section({ title: "Обновление 2.2", content: "Что нового", thumbnailUrl: "https://example.com/2.2.png" })
+      .text("Тут могла бы быть ваша реклама.")
+      .separator("large")
+      .buttons({ id: "news:like", label: "👍", style: "Primary" });
+
+    await builder.send(interaction);
+  }
+}</code></pre>
+      </div>
+
+      <div class="pagination-nav">
+        <a class="page-link" href="index.html"><small>Назад</small>← Введение</a>
+        <a class="page-link next" href="builder.html"><small>Далее</small>V2Builder →</a>
+      </div>
+    </main>
+  </div>
+
+</body>
+</html>

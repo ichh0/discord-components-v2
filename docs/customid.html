@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="dark light" />
+  <title>customId и состояние — discordjs-components-v2</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%232f6bff'/%3E%3Cstop offset='1' stop-color='%237fb0ff'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='100' height='100' rx='24' fill='url(%23g)'/%3E%3Ctext x='50' y='70' font-family='Arial' font-size='52' font-weight='900' fill='white' text-anchor='middle'%3EC2%3C/text%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+  <script defer src="js/prism/prism-core.min.js"></script>
+  <script defer src="js/prism/prism-clike.min.js"></script>
+  <script defer src="js/prism/prism-javascript.min.js"></script>
+  <script defer src="js/prism/prism-typescript.min.js"></script>
+  <script defer src="js/prism/prism-bash.min.js"></script>
+  <script defer src="js/prism/prism-json.min.js"></script>
+  <script defer src="js/prism/prism-markup.min.js"></script>
+  <script defer src="js/main.js"></script>
+</head>
+<body>
+
+  <nav class="navbar">
+    <a class="brand" href="index.html"><span class="brand-logo">C2</span>discordjs-components-v2</a>
+    <div class="nav-links">
+      <a href="index.html">Документация</a>
+      <a href="pagination.html">Пагинация</a>
+    </div>
+    <button class="icon-btn hamburger" id="sidebar-toggle" type="button" aria-label="Меню">☰</button>
+    <div class="nav-right">
+      <button class="icon-btn" id="theme-toggle" type="button" aria-label="Сменить тему" title="Сменить тему">
+        <span class="icon-dark" aria-hidden="true">🌙</span>
+        <span class="icon-light" aria-hidden="true">☀️</span>
+      </button>
+      <span class="nav-version">v2.2.0</span>
+    </div>
+  </nav>
+
+  <div class="layout">
+    <nav class="sidebar">
+      <p class="sidebar-title">Начало</p>
+      <div class="sidebar-nav">
+        <a href="index.html"><span class="nav-ico" aria-hidden="true">🏠</span>Введение</a>
+        <a href="getting-started.html"><span class="nav-ico" aria-hidden="true">🚀</span>Установка и быстрый старт</a>
+      </div>
+      <p class="sidebar-title">Библиотека</p>
+      <div class="sidebar-nav">
+        <a href="builder.html"><span class="nav-ico" aria-hidden="true">🧱</span>V2Builder</a>
+        <a href="parsing.html"><span class="nav-ico" aria-hidden="true">♻️</span>Разбор без кэша</a>
+        <a href="editing.html"><span class="nav-ico" aria-hidden="true">✂️</span>Редактирование</a>
+        <a href="layout.html"><span class="nav-ico" aria-hidden="true">🗂️</span>Секции и layout</a>
+        <a href="template.html"><span class="nav-ico" aria-hidden="true">🧩</span>Шаблоны и пагинация</a>
+        <a href="modal.html"><span class="nav-ico" aria-hidden="true">📝</span>Модальные окна</a>
+        <a class="active" href="customid.html"><span class="nav-ico" aria-hidden="true">🆔</span>customId и состояние</a>
+        <a href="validation.html"><span class="nav-ico" aria-hidden="true">🛡️</span>Валидация</a>
+      </div>
+      <p class="sidebar-title">Паттерны</p>
+      <div class="sidebar-nav">
+        <a href="pagination.html"><span class="nav-ico" aria-hidden="true">📄</span>Пагинация вручную</a>
+      </div>
+    </nav>
+
+    <div class="sidebar-mask" id="sidebar-mask"></div>
+
+    <main class="content">
+      <div class="page-hero">
+        <p class="kicker">customId</p>
+        <h1>customId и состояние</h1>
+        <p class="tagline">Компоненты без кэша = состояние живёт в самом custom_id.</p>
+      </div>
+
+      <p>
+        Одно из следствий философии «без кэшей»: данные, которые нужны обработчику кнопки, должны
+        быть доступны из самой кнопки. <code>CustomIdBuilder</code> — однострочный кодек формата
+        <code>name:entityId:executorId:rest…</code> (разделитель всегда <code>:</code>) с гарантией
+        лимита Discord в 100 символов.
+      </p>
+
+      <div class="code-block">
+        <div class="code-header"><span class="lang">ts</span><button class="copy-btn" type="button"><span aria-hidden="true">⧉</span> Копировать</button></div>
+        <pre><code class="language-ts">import { CustomIdBuilder, CustomIdError } from "discordjs-components-v2";
+
+const id = CustomIdBuilder.build({
+  name: "_modal",
+  entityId: "x7k",
+  executorId,             // "" → пропускается («нет сущности»)
+  rest: ["p", "2"],       // если нужно больше данных — массив сегментов
+});
+// "_modal:x7k:555:p:2" — всегда ≤ 100 символов
+
+const { name, entityId, executorId } = CustomIdBuilder.parse(id);
+CustomIdBuilder.is(id, "_modal"); // true → быстрый роутинг без if/else</code></pre>
+      </div>
+
+      <h2>API</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Метод / константа</th><th>Что даёт</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>.build(parts)</code></td><td>собрать id; кидает <code>CustomIdError</code> при пустом имени, <code>:</code> внутри сегмента или переполнении &gt;100 символов (с числом «сократить на N»)</td></tr>
+            <tr><td><code>.parse(customId)</code></td><td>lenient-разбор <code>{ name, entityId, executorId, rest, raw, length }</code> — никогда не падает</td></tr>
+            <tr><td><code>.is(customId, name)</code></td><td>валидность + совпадение имени (готово для роутера)</td></tr>
+            <tr><td><code>.isValid(customId)</code></td><td>true только если ≤100 символов и есть имя</td></tr>
+            <tr><td><code>.capacityOf(parts)</code> / <code>.remaining(parts)</code></td><td>занято / свободно символов до лимита</td></tr>
+            <tr><td><code>CUSTOM_ID_MAX_LENGTH</code></td><td>константа <code>100</code></td></tr>
+            <tr><td><code>CustomIdError</code></td><td>отдельный класс ошибок</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2>Роутинг обработчиков</h2>
+      <p>Типичная схема в discordx — один обработчик на группу кнопок:</p>
+      <div class="code-block">
+        <div class="code-header"><span class="lang">ts</span><button class="copy-btn" type="button"><span aria-hidden="true">⧉</span> Копировать</button></div>
+        <pre><code class="language-ts">@Button({ id: /_.+/ })
+async handle(interaction: ButtonInteraction) {
+  const id = CustomIdBuilder.parse(interaction.customId);
+
+  if (id.entityId !== draftId) return;      // чужая сущность
+  if (id.executorId !== interaction.user.id) {
+    return interaction.reply({ content: "Это не твоя кнопка", ephemeral: true });
+  }
+
+  if (CustomIdBuilder.is(interaction.customId, "_nabor")) {
+    // …обработка
+  }
+}</code></pre>
+      </div>
+
+      <h2>Drop-in замена CIB</h2>
+      <div class="code-block">
+        <div class="code-header"><span class="lang">ts</span><button class="copy-btn" type="button"><span aria-hidden="true">⧉</span> Копировать</button></div>
+        <pre><code class="language-ts">const CIB = CustomIdBuilder; // тот же API, с гарантией лимита 100 символов</code></pre>
+      </div>
+
+      <h2>Где ещё использовать</h2>
+      <ul>
+        <li>carry текущей страницы в пагинации (см. <a href="template.html">Шаблоны и пагинация</a>);</li>
+        <li>идентификатор записи без похода в БД по id;</li>
+        <li>проверка прав через <code>executorId</code> без хранения сессий.</li>
+      </ul>
+
+      <div class="pagination-nav">
+        <a class="page-link" href="modal.html"><small>Назад</small>← Модальные окна</a>
+        <a class="page-link next" href="validation.html"><small>Далее</small>Валидация →</a>
+      </div>
+    </main>
+  </div>
+
+</body>
+</html>

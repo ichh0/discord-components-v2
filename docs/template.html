@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="dark light" />
+  <title>Шаблоны и пагинация — discordjs-components-v2</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%232f6bff'/%3E%3Cstop offset='1' stop-color='%237fb0ff'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='100' height='100' rx='24' fill='url(%23g)'/%3E%3Ctext x='50' y='70' font-family='Arial' font-size='52' font-weight='900' fill='white' text-anchor='middle'%3EC2%3C/text%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+  <script defer src="js/prism/prism-core.min.js"></script>
+  <script defer src="js/prism/prism-clike.min.js"></script>
+  <script defer src="js/prism/prism-javascript.min.js"></script>
+  <script defer src="js/prism/prism-typescript.min.js"></script>
+  <script defer src="js/prism/prism-bash.min.js"></script>
+  <script defer src="js/prism/prism-json.min.js"></script>
+  <script defer src="js/prism/prism-markup.min.js"></script>
+  <script defer src="js/main.js"></script>
+</head>
+<body>
+
+  <nav class="navbar">
+    <a class="brand" href="index.html"><span class="brand-logo">C2</span>discordjs-components-v2</a>
+    <div class="nav-links">
+      <a href="index.html">Документация</a>
+      <a href="pagination.html">Пагинация</a>
+    </div>
+    <button class="icon-btn hamburger" id="sidebar-toggle" type="button" aria-label="Меню">☰</button>
+    <div class="nav-right">
+      <button class="icon-btn" id="theme-toggle" type="button" aria-label="Сменить тему" title="Сменить тему">
+        <span class="icon-dark" aria-hidden="true">🌙</span>
+        <span class="icon-light" aria-hidden="true">☀️</span>
+      </button>
+      <span class="nav-version">v2.2.0</span>
+    </div>
+  </nav>
+
+  <div class="layout">
+    <nav class="sidebar">
+      <p class="sidebar-title">Начало</p>
+      <div class="sidebar-nav">
+        <a href="index.html"><span class="nav-ico" aria-hidden="true">🏠</span>Введение</a>
+        <a href="getting-started.html"><span class="nav-ico" aria-hidden="true">🚀</span>Установка и быстрый старт</a>
+      </div>
+      <p class="sidebar-title">Библиотека</p>
+      <div class="sidebar-nav">
+        <a href="builder.html"><span class="nav-ico" aria-hidden="true">🧱</span>V2Builder</a>
+        <a href="parsing.html"><span class="nav-ico" aria-hidden="true">♻️</span>Разбор без кэша</a>
+        <a href="editing.html"><span class="nav-ico" aria-hidden="true">✂️</span>Редактирование</a>
+        <a href="layout.html"><span class="nav-ico" aria-hidden="true">🗂️</span>Секции и layout</a>
+        <a class="active" href="template.html"><span class="nav-ico" aria-hidden="true">🧩</span>Шаблоны и пагинация</a>
+        <a href="modal.html"><span class="nav-ico" aria-hidden="true">📝</span>Модальные окна</a>
+        <a href="customid.html"><span class="nav-ico" aria-hidden="true">🆔</span>customId и состояние</a>
+        <a href="validation.html"><span class="nav-ico" aria-hidden="true">🛡️</span>Валидация</a>
+      </div>
+      <p class="sidebar-title">Паттерны</p>
+      <div class="sidebar-nav">
+        <a href="pagination.html"><span class="nav-ico" aria-hidden="true">📄</span>Пагинация вручную</a>
+      </div>
+    </nav>
+
+    <div class="sidebar-mask" id="sidebar-mask"></div>
+
+    <main class="content">
+      <div class="page-hero">
+        <p class="kicker">Modules</p>
+        <h1>Шаблоны и пагинация</h1>
+        <p class="tagline">Собрали каркас один раз — рендерим любые значения. Плюс готовый бесстейтовый пагинатор.</p>
+      </div>
+
+      <p>
+        Когда одно и то же сообщение нужно отправить много раз (страницы, товары, отчёты), держать в
+        памяти полные payload'ы избыточно, а парсить текст обратно — хрупко. Вместо этого собирается
+        <strong>шаблон</strong> с <strong>слотами</strong> (сентинелами), а при каждом ответе меняются
+        только значения. Оба модуля — на этом же принципе; оба не мутируют исходный каркас.
+      </p>
+
+      <h2>Подключение</h2>
+      <p>Модули живут в отдельных entrypoint и не входят в корневой импорт:</p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Пакет</th><th>Что внутри</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>discordjs-components-v2/lib/template</code></td>
+              <td><code>V2Template</code></td>
+            </tr>
+            <tr>
+              <td><code>discordjs-components-v2/lib/pagination</code></td>
+              <td><code>V2Paginator</code></td>
+            </tr>
+            <tr>
+              <td><code>discordjs-components-v2/lib/advanced</code></td>
+              <td><code>keepOnly</code>, <code>moveByKind</code></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2>V2Template</h2>
+      <p>
+        Каркас сообщения собирается один раз (из <code>new V2Builder()</code>, raw-компонентов или
+        любого входа <code>V2Builder.parse</code> — в т.ч. сообщения). Слоты регистрируются с
+        сентинелом: без явного сентинела <code>slot("name")</code> даст токен
+        <code>{{name}}</code>. <code>render()</code> подставляет значения во все TextDisplay и в
+        обычный <code>content</code> сообщения, возвращая свежий <code>V2Builder</code>.
+      </p>
+
+      <div class="code-block">
+        <div class="code-header"><span class="lang">ts</span><button class="copy-btn" type="button"><span aria-hidden="true">⧉</span> Копировать</button></div>
+        <pre><code class="language-ts">import { V2Builder } from "discordjs-components-v2";
+import { V2Template } from "discordjs-components-v2/lib/template";
+
+const tpl = new V2Template(new V2Builder()
+  .content("Показываю: {{n}}")          // слот и в plain-контенте тоже
+  .text("Привет, {{name}}!")
+  .buttons({ id: "like", label: "👍" }));
+
+tpl.slot("name");                       // авто-сентинел {{name}}
+tpl.slot("n");                          // → {{n}}
+
+// рендер никогда не мутирует каркас — можно звать без ограничений
+const payload = tpl.render({ name: "Мир", n: 42 }).build();
+// content: "Показываю: 42", первый TextDisplay: "Привет, Мир!"
+
+// из существующего сообщения:
+const tpl2 = V2Template.parse(fetchedMessage);
+tpl2.slot("content");
+await tpl2.render({ content: "новая страница" }).send(ctx);</code></pre>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Метод</th><th>Что делает</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>new V2Template(input?)</code></td><td>builds на базе builder / raw-компонентов / message-подобного входа</td></tr>
+            <tr><td><code>V2Template.parse(input)</code></td><td>то же, что и конструктор — удобно как статик</td></tr>
+            <tr><td><code>.slot(key, sentinel?)</code></td><td>регистрирует слот; без сентинела — <code>{{"{{key}}"}}</code></td></tr>
+            <tr><td><code>.slots({ key: sentinel })</code></td><td>регистрирует несколько сразу</td></tr>
+            <tr><td><code>.sentinelOf(key)</code> · <code>.slotKeys()</code></td><td>сентинел / список ключей</td></tr>
+            <tr><td><code>.render(values)</code></td><td>→ новый <code>V2Builder</code> с подставленными значениями</td></tr>
+            <tr><td><code>.build()</code></td><td>валидирует и возвращает payload каркаса (без подстановки)</td></tr>
+            <tr><td><code>.builder</code></td><td>лежащий в основе <code>V2Builder</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout info">
+        <div class="callout-title">ℹ️ undefined не трогает сентинел</div>
+        <p>
+          <code>render({ x: undefined })</code> оставляет <code>{{x}}</code> на месте — удобно
+          делать частичный рендер. Строки и числа приводятся к строке.
+        </p>
+      </div>
+
+      <h2>V2Paginator</h2>
+      <p>
+        Бесстейтовый пагинатор поверх шаблона. Страницы — это slot-значения для общего шаблона
+        (или готовые <code>V2Template</code>&nbsp;— тогда общий не нужен). Вниз добавляется один ряд
+        кнопок <code>pag:0</code>, <code>pag:1</code>, …&nbsp;(текущая выделена примарным стилем и
+        задизаблена). Текущая страница читается из самого сообщения — никакого кэша.
+      </p>
+
+      <div class="code-block">
+        <div class="code-header"><span class="lang">ts</span><button class="copy-btn" type="button"><span aria-hidden="true">⧉</span> Копировать</button></div>
+        <pre><code class="language-ts">import { V2Builder } from "discordjs-components-v2";
+import { V2Template } from "discordjs-components-v2/lib/template";
+import { V2Paginator } from "discordjs-components-v2/lib/pagination";
+
+const tpl = new V2Template(new V2Builder().text("{{body}}")).slot("body");
+
+const pages = new V2Paginator({
+  template: tpl,                                  // обязателен, если pages — slot-мапы
+  pages: [
+    { body: "Страница 1" },
+    { body: "Страница 2" },
+    { body: "Страница 3" },
+  ],
+  pageButton: "pag",                              // → custom_id `pag:0`, `pag:1`, …
+  pageLabel: (i, total) => `${i + 1} / ${total}`, // метки кнопок (по умолчанию "1", "2", …)
+});
+
+await interaction.reply(pages.render(0));         // payload первой страницы</code></pre>
+      </div>
+
+      <p>Обработчик кнопок — один вызов. Достаточно <code>custom_id</code> с номером страницы; вручную можно расширить и стрелками (<code>pag:prev</code>/<code>pag:next</code>):</p>
+
+      <div class="code-block">
+        <div class="code-header"><span class="lang">ts</span><button class="copy-btn" type="button"><span aria-hidden="true">⧉</span> Копировать</button></div>
+        <pre><code class="language-ts">import { Discord, Button } from "discordx";
+import type { ButtonInteraction } from "discord.js";
+import { V2Paginator } from "discordjs-components-v2/lib/pagination";
+
+@Discord()
+class PaginationHandler {
+  @Button({ id: /^pag:/ })
+  async paginate(interaction: ButtonInteraction) {
+    // сам сделает update() / editReply() / reply() и вернёт true,
+    // если custom_id принадлежит этому пагинатору
+    await pages.jump(interaction);
+  }
+}</code></pre>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Метод / опция</th><th>Что делает</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>new V2Paginator({ pages, pageButton, template?, pageLabel? })</code></td><td>конструктор; до 5 страниц (один ряд кнопок)</td></tr>
+            <tr><td><code>.render(page)</code></td><td>payload страницы + ряд кнопок; вне диапазона — throw</td></tr>
+            <tr><td><code>.jump(ctx)</code></td><td><code>true</code>, если обработал; принимает и discordx-<code>ctx</code> (<code>ctx.interaction</code>)</td></tr>
+            <tr><td><code>.currentFromMessage(msg)</code></td><td>номер задизабленной кнопки (источник истины текущей страницы)</td></tr>
+            <tr><td><code>.size</code> · <code>.pageButton</code></td><td>количество страниц / префикс custom_id</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout success">
+        <div class="callout-title">💡 Почему без кэша</div>
+        <p>
+          Пагинатор ничего не помнит: номер текущей страницы всегда <code>custom_id</code> той
+          кнопки, которая <code>disabled</code> в текущем сообщении. Переключение = объявить новый
+          <code>custom_id</code> задизабленным и подставить контент страницы — ровно то, что делает
+          <code>render()</code>.
+        </p>
+      </div>
+
+      <h2>Редкие операции: <code>lib/advanced</code></h2>
+      <p>
+        Два инструмента намеренно держатся вне корневого <code>index</code>: <code>keepOnly</code>
+        (оставить в дереве только совпавшее с селектором + их предков) и standalone
+        <code>moveByKind</code>. Оба работают <strong>in place</strong>, поэтому требуют «свой»
+        (нормализованный) массив. Явный пример <code>keepOnly</code> ниже:
+      </p>
+
+      <div class="code-block">
+        <div class="code-header"><span class="lang">ts</span><button class="copy-btn" type="button"><span aria-hidden="true">⧉</span> Копировать</button></div>
+        <pre><code class="language-ts">import { keepOnly, moveByKind } from "discordjs-components-v2/lib/advanced";
+
+const children = V2Builder.parse(message).toJSON().components; // owned
+keepOnly(children, /розыгрыш/i);   // оставить только совпавшее (+ предков)
+moveByKind(children, "section", 2, 0); // переместить секцию наверх</code></pre>
+      </div>
+
+      <div class="callout warning">
+        <div class="callout-title">⚠️ In place</div>
+        <p>
+          <code>keepOnly</code> / <code>moveByKind</code> мутируют переданный массив. Если нужна
+          защита от побочных эффектов — предварительно <code>cloneDeep</code>/<code>toJSON()</code>
+          или используйте методы билдера/редактора (см. «Секции и layout»), которые работают на
+          своих данных.
+        </p>
+      </div>
+
+      <div class="pagination-nav">
+        <a class="page-link" href="layout.html"><small>Назад</small>← Секции и layout</a>
+        <a class="page-link next" href="modal.html"><small>Далее</small>Модальные окна →</a>
+      </div>
+    </main>
+  </div>
+
+</body>
+</html>

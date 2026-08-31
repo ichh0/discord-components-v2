@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="dark light" />
+  <title>Пагинация — discordjs-components-v2</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%232f6bff'/%3E%3Cstop offset='1' stop-color='%237fb0ff'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='100' height='100' rx='24' fill='url(%23g)'/%3E%3Ctext x='50' y='70' font-family='Arial' font-size='52' font-weight='900' fill='white' text-anchor='middle'%3EC2%3C/text%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+  <script defer src="js/prism/prism-core.min.js"></script>
+  <script defer src="js/prism/prism-clike.min.js"></script>
+  <script defer src="js/prism/prism-javascript.min.js"></script>
+  <script defer src="js/prism/prism-typescript.min.js"></script>
+  <script defer src="js/prism/prism-bash.min.js"></script>
+  <script defer src="js/prism/prism-json.min.js"></script>
+  <script defer src="js/prism/prism-markup.min.js"></script>
+  <script defer src="js/main.js"></script>
+</head>
+<body>
+
+  <nav class="navbar">
+    <a class="brand" href="index.html"><span class="brand-logo">C2</span>discordjs-components-v2</a>
+    <div class="nav-links">
+      <a href="index.html">Документация</a>
+      <a href="pagination.html">Пагинация</a>
+    </div>
+    <button class="icon-btn hamburger" id="sidebar-toggle" type="button" aria-label="Меню">☰</button>
+    <div class="nav-right">
+      <button class="icon-btn" id="theme-toggle" type="button" aria-label="Сменить тему" title="Сменить тему">
+        <span class="icon-dark" aria-hidden="true">🌙</span>
+        <span class="icon-light" aria-hidden="true">☀️</span>
+      </button>
+      <span class="nav-version">v2.2.0</span>
+    </div>
+  </nav>
+
+  <div class="layout">
+    <nav class="sidebar">
+      <p class="sidebar-title">Начало</p>
+      <div class="sidebar-nav">
+        <a href="index.html"><span class="nav-ico" aria-hidden="true">🏠</span>Введение</a>
+        <a href="getting-started.html"><span class="nav-ico" aria-hidden="true">🚀</span>Установка и быстрый старт</a>
+      </div>
+      <p class="sidebar-title">Библиотека</p>
+      <div class="sidebar-nav">
+        <a href="builder.html"><span class="nav-ico" aria-hidden="true">🧱</span>V2Builder</a>
+        <a href="parsing.html"><span class="nav-ico" aria-hidden="true">♻️</span>Разбор без кэша</a>
+        <a href="editing.html"><span class="nav-ico" aria-hidden="true">✂️</span>Редактирование</a>
+        <a href="layout.html"><span class="nav-ico" aria-hidden="true">🗂️</span>Секции и layout</a>
+        <a href="template.html"><span class="nav-ico" aria-hidden="true">🧩</span>Шаблоны и пагинация</a>
+        <a href="modal.html"><span class="nav-ico" aria-hidden="true">📝</span>Модальные окна</a>
+        <a href="customid.html"><span class="nav-ico" aria-hidden="true">🆔</span>customId и состояние</a>
+        <a href="validation.html"><span class="nav-ico" aria-hidden="true">🛡️</span>Валидация</a>
+      </div>
+      <p class="sidebar-title">Паттерны</p>
+      <div class="sidebar-nav">
+        <a class="active" href="pagination.html"><span class="nav-ico" aria-hidden="true">📄</span>Пагинация вручную</a>
+      </div>
+    </nav>
+
+    <div class="sidebar-mask" id="sidebar-mask"></div>
+
+    <main class="content">
+      <div class="page-hero">
+        <p class="kicker">Pattern</p>
+        <h1>Пагинация</h1>
+        <p class="tagline">Меняем контент в сообщении кнопками — без кэшей и без хрупкого парсинга больших текстов.</p>
+      </div>
+
+      <p>
+        Сложность пагинации не в кнопках и не в деревьях — а в одном: содержимое страниц может быть
+        большим и непредсказуемым. Парсить такой текст назад, чтобы найти, что менять — хрупко.
+        Хранить в себе полные payload'ы каждой страницы — расточительно.
+      </p>
+
+      <div class="callout info">
+        <div class="callout-title">⚡ Готовый класс: V2Paginator</div>
+        <p>
+          В библиотеке есть встроенная бесстейтовая реализация на тот же принцип
+          («страница = шаблон + слоты», текущая страница читается из задизабленной кнопки):
+          <br /><code>import { V2Paginator } from "discordjs-components-v2/lib/pagination";</code><br />
+          <code>import { V2Template } from "discordjs-components-v2/lib/template";</code><br />
+          Достаточно одного вызова <code>await pages.jump(ctx)</code> в обработчике кнопок
+          <code>pag:N</code> / <code>pag:prev</code> / <code>pag:next</code>. Подробная
+          документация — на странице <a href="template.html">Шаблоны и пагинация</a>. Эта страница
+          показывает механику вручную — полезно, когда нужно больше контроля.
+        </p>
+      </div>
+
+      <p>Решение — <strong>шаблон + сентинел</strong>:</p>
+      <div class="features" style="grid-template-columns: repeat(auto-fit, minmax(240px,1fr));">
+        <div class="feature">
+          <div class="icon">🏗️</div>
+          <h3>Каркас один</h3>
+          <p>Структура (секция, текст, разделитель, кнопки) собирается один раз и не меняется.</p>
+        </div>
+        <div class="feature">
+          <div class="icon">🔁</div>
+          <h3>Сентинел</h3>
+          <p>В текст вшивается токен <code>{{__CONTENT}}</code>. Замена детерминированная.</p>
+        </div>
+        <div class="feature">
+          <div class="icon">🧮</div>
+          <h3>Стейт в кнопке</h3>
+          <p>Текущая страница живёт в <code>custom_id</code> индикатора. Кэш не нужен.</p>
+        </div>
+        <div class="feature">
+          <div class="icon">📄</div>
+          <h3>Только контент в памяти</h3>
+          <p>Хранится лишь массив коротких строк страниц — не payload'ы целиком.</p>
+        </div>
+      </div>
+
+      <h2>Сборка шаблона</h2>
+      <div class="code-block">
+        <div class="code-header"><span class="lang">ts</span><button class="copy-btn" type="button"><span aria-hidden="true">⧉</span> Копировать</button></div>
+        <pre><code class="language-ts">const pages = [
+  "# Обновление 2.2\n*Список изменений на этой странице*...",
+  "# Обновление 2.2\n**Исправления багов**...",
+  // ... ещё страницы
+];
+
+// Собираем каркас один раз:
+const frame = new V2Builder()
+  .section({ title: "📄 Пагинация", thumbnailUrl: thumb })
+  .text("{{__CONTENT}}")            // ← слот
+  .separator("large")
+  .buttons(
+    { id: "pag:prev", label: "◀ Назад", style: "Primary" },
+    { id: "pag:1", label: "1 / 3" },  // индикатор, в custom_id — номер страницы
+    { id: "pag:next", label: "Вперёд ▶", style: "Primary" },
+  );
+
+await frame.send(interaction);</code></pre>
+      </div>
+
+      <h2>Обработчик кнопки</h2>
+      <div class="code-block">
+        <div class="code-header"><span class="lang">ts</span><button class="copy-btn" type="button"><span aria-hidden="true">⧉</span> Копировать</button></div>
+        <pre><code class="language-ts">import { Discord, Button } from "discordx";
+import type { ButtonInteraction } from "discord.js";
+import { V2Builder } from "discordjs-components-v2";
+
+@Discord()
+class Pagination {
+  @Button({ id: /^pag:/ })
+  async paginate(interaction: ButtonInteraction) {
+    const builder = V2Builder.parse(interaction.message); // каркас в билдер
+
+    // Текущая страница из custom_id индикатора
+    let current = 0;
+    for (const b of builder.findAll(/^pag:\d+$/)) {
+      current = Number(b.component.custom_id.split(":")[1]) - 1;
+    }
+
+    const next = interaction.customId.endsWith("next")
+      ? Math.min(current + 1, pages.length - 1)
+      : Math.max(current - 1, 0);
+
+    if (next === current) return; // на границе — ничего не делаем
+
+    // Единственное изменение — контент слота
+    builder.replaceText("{{__CONTENT}}", pages[next]);
+
+    // Обновляем индикатор текущей страницы
+    builder.setButtonLabel(`pag:${current + 1}`, `${next + 1} / ${pages.length}`);
+
+    // Границы обрабатываем в полной версии ниже
+    // …
+    await builder.send(interaction); // update
+  }
+}</code></pre>
+      </div>
+
+      <div class="callout warning">
+        <div class="callout-title">⚠️ Упрощение ради наглядности</div>
+        <p>
+          В примере выше пометка задизабленных кнопок сокращена. Ниже — корректная версия без ухищрений:
+        </p>
+      </div>
+
+      <div class="code-block">
+        <div class="code-header"><span class="lang">ts</span><button class="copy-btn" type="button"><span aria-hidden="true">⧉</span> Копировать</button></div>
+        <pre><code class="language-ts">    // Границы: на первой странице выключаем «Назад», на последней — «Вперёд»
+    builder.enableButtons(["pag:prev", "pag:next"]);
+    if (next === 0) builder.disableButtons("pag:prev");
+    if (next === pages.length - 1) builder.disableButtons("pag:next");</code></pre>
+      </div>
+
+      <p>И весь обработчик целиком с корректной границей:</p>
+      <div class="code-block">
+        <div class="code-header"><span class="lang">ts</span><button class="copy-btn" type="button"><span aria-hidden="true">⧉</span> Копировать</button></div>
+        <pre><code class="language-ts">@Button({ id: /^pag:/ })
+async paginate(interaction: ButtonInteraction) {
+  const builder = V2Builder.parse(interaction.message);
+
+  let current = 0;
+  for (const b of builder.findAll(/^pag:\d+$/)) {
+    current = Number(b.component.custom_id.split(":")[1]) - 1;
+  }
+
+  const next = interaction.customId.endsWith("next")
+    ? Math.min(current + 1, pages.length - 1)
+    : Math.max(current - 1, 0);
+
+  if (next === current) return;
+
+  builder.replaceText("{{__CONTENT}}", pages[next]);
+
+  builder.setButtonLabel(`pag:${current + 1}`, `${next + 1} / ${pages.length}`);
+  builder.enableButtons(["pag:prev", "pag:next"]);
+  if (next === 0) builder.disableButtons("pag:prev");
+  if (next === pages.length - 1) builder.disableButtons("pag:next");
+
+  await builder.send(interaction);
+}</code></pre>
+      </div>
+
+      <h2>Почему это не ломается</h2>
+      <ul>
+        <li><strong>Структура не парсится.</strong> <code>parse</code> восстанавливает каркас целиком; мы лишь меняем текст по точному токену.</li>
+        <li><strong>Контент никогда не парсится обратно.</strong> Он всегда лежит в массиве <code>pages</code>, а в сообщении — только текущая страница.</li>
+        <li><strong>Ноль кэша payload'ов.</strong> Единственный стейт — короткий номер страницы в <code>custom_id</code>.</li>
+        <li><strong>Любой контент.</strong> Раз страница попадает в слот строкой — она может быть какой угодно.</li>
+      </ul>
+
+      <h2>Обобщение на «страницы с разной структурой»</h2>
+      <p>
+        Если каждая страница — другой набор секций/галерей, то вместо одного слота можно держать
+        горячий билдер для текущей страницы, а «скелет» восстанавливать заново при каждом
+        переключении. Сентинельная замена подходит именно там, где меняется только текст —
+        а это самый частый случай.
+      </p>
+
+      <div class="callout success">
+        <div class="callout-title">💡 Рекомендация</div>
+        <p>
+          Раз у вас «слои» (секция → текст → сепаратор → кнопки), вынесите сборку каркаса в одну
+          функцию <code>buildFrame(pageIndex: number)</code> и вызывайте её и при первом ответе, и в
+          обработчике кнопки. Тогда у вас вообще не будет сентинела — просто пересборка. Оба подхода
+          валидны; сентинел эффективнее, когда текст большой.
+        </p>
+      </div>
+
+      <div class="pagination-nav">
+        <a class="page-link" href="validation.html"><small>Назад</small>← Валидация</a>
+        <a class="page-link" href="index.html"><small>На главную</small>Введение →</a>
+      </div>
+    </main>
+  </div>
+
+</body>
+</html>

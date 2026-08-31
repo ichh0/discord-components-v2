@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="dark light" />
+  <title>discordjs-components-v2 — документация</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%232f6bff'/%3E%3Cstop offset='1' stop-color='%237fb0ff'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='100' height='100' rx='24' fill='url(%23g)'/%3E%3Ctext x='50' y='70' font-family='Arial' font-size='52' font-weight='900' fill='white' text-anchor='middle'%3EC2%3C/text%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+  <script defer src="js/prism/prism-core.min.js"></script>
+  <script defer src="js/prism/prism-clike.min.js"></script>
+  <script defer src="js/prism/prism-javascript.min.js"></script>
+  <script defer src="js/prism/prism-typescript.min.js"></script>
+  <script defer src="js/prism/prism-bash.min.js"></script>
+  <script defer src="js/prism/prism-json.min.js"></script>
+  <script defer src="js/prism/prism-markup.min.js"></script>
+  <script defer src="js/main.js"></script>
+</head>
+<body>
+
+  <nav class="navbar">
+    <a class="brand" href="index.html"><span class="brand-logo">C2</span>discordjs-components-v2</a>
+    <div class="nav-links">
+      <a href="index.html">Документация</a>
+      <a href="pagination.html">Пагинация</a>
+      <a href="https://github.com/ichh0/discord-components-v2" target="_blank" rel="noopener">GitHub</a>
+    </div>
+    <button class="icon-btn hamburger" id="sidebar-toggle" type="button" aria-label="Меню">☰</button>
+    <div class="nav-right">
+      <button class="icon-btn" id="theme-toggle" type="button" aria-label="Сменить тему" title="Сменить тему">
+        <span class="icon-dark" aria-hidden="true">🌙</span>
+        <span class="icon-light" aria-hidden="true">☀️</span>
+      </button>
+      <span class="nav-version">v2.2.0</span>
+    </div>
+  </nav>
+
+  <div class="layout">
+    <nav class="sidebar">
+      <p class="sidebar-title">Начало</p>
+      <div class="sidebar-nav">
+        <a class="active" href="index.html"><span class="nav-ico" aria-hidden="true">🏠</span>Введение</a>
+        <a href="getting-started.html"><span class="nav-ico" aria-hidden="true">🚀</span>Установка и быстрый старт</a>
+      </div>
+      <p class="sidebar-title">Библиотека</p>
+      <div class="sidebar-nav">
+        <a href="builder.html"><span class="nav-ico" aria-hidden="true">🧱</span>V2Builder</a>
+        <a href="parsing.html"><span class="nav-ico" aria-hidden="true">♻️</span>Разбор без кэша</a>
+        <a href="editing.html"><span class="nav-ico" aria-hidden="true">✂️</span>Редактирование</a>
+        <a href="layout.html"><span class="nav-ico" aria-hidden="true">🗂️</span>Секции и layout</a>
+        <a href="template.html"><span class="nav-ico" aria-hidden="true">🧩</span>Шаблоны и пагинация</a>
+        <a href="modal.html"><span class="nav-ico" aria-hidden="true">📝</span>Модальные окна</a>
+        <a href="customid.html"><span class="nav-ico" aria-hidden="true">🆔</span>customId и состояние</a>
+        <a href="validation.html"><span class="nav-ico" aria-hidden="true">🛡️</span>Валидация</a>
+      </div>
+      <p class="sidebar-title">Паттерны</p>
+      <div class="sidebar-nav">
+        <a href="pagination.html"><span class="nav-ico" aria-hidden="true">📄</span>Пагинация вручную</a>
+      </div>
+    </nav>
+
+    <div class="sidebar-mask" id="sidebar-mask"></div>
+
+    <main class="content">
+      <div class="home-hero">
+        <div class="logo-big">C2</div>
+        <p class="kicker">discord.js · Components V2 · TypeScript</p>
+        <h1>discordjs-components-v2</h1>
+        <p class="tagline">
+          Сборщик, разборщик и утилиты редактирования для Discord Components V2 —
+          без кэшей состояния. Забрал → разобрал → поправил → отправил.
+        </p>
+        <div class="hero-terminal">
+          <span class="prompt" aria-hidden="true">$</span>
+          <span class="cmd" data-typewriter>npm i discordjs-components-v2</span>
+        </div>
+        <div class="hero-buttons">
+          <a class="btn primary" href="getting-started.html">Начать работу</a>
+          <a class="btn ghost" href="pagination.html">Смотрим пагинацию</a>
+          <a class="btn ghost" href="https://github.com/ichh0/discord-components-v2" target="_blank" rel="noopener">GitHub</a>
+        </div>
+      </div>
+
+      <h2>Ключевая идея</h2>
+      <p>
+        Компоненты — это обычный JSON. Когда Discord отдаёт вам сообщение, он возвращает
+        <strong>полное дерево компонентов</strong> в <code>message.components</code>. Значит,
+        состояние сообщения не нужно хранить у себя: в любой момент его можно заново составить,
+        изменить и отправить обратно. Это и есть принцип «без кэшей», на котором построена
+        вся библиотека.
+      </p>
+
+      <div class="code-block">
+        <div class="code-header"><span class="lang">ts</span><button class="copy-btn" type="button"><span aria-hidden="true">⧉</span> Копировать</button></div>
+        <pre><code class="language-ts">const message = await ctx.fetchReply();
+
+const builder = V2Builder.parse(message);   // raw JSON → билдер
+builder
+  .replaceText("0 участников", "1 участник")
+  .setButtonLabel("join", "Розыгрыш закрыт")
+  .disableButtons();
+
+await builder.send(ctx);                    // editReply внутри</code></pre>
+      </div>
+
+      <p class="muted">
+        Работает на чистых структурах <code>discord-api-types/v10</code>. discord.js не нужен в
+        рантайме и как peer-зависимость — результат полностью совместим с discord.js v14:
+        передавайте JSON прямо в <code>components:</code>.
+      </p>
+
+      <h2>Возможности</h2>
+      <div class="features">
+        <div class="feature">
+          <div class="icon">🧱</div>
+          <h3>V2Builder</h3>
+          <p>Декларативная сборка: текст, кнопки, селекты, секции, разделители, галереи, вложения и ANSI-таблицы.</p>
+        </div>
+        <div class="feature">
+          <div class="icon">♻️</div>
+          <h3>Кэш-фри разбор</h3>
+          <p><code>parseComponents()</code> / <code>V2Builder.parse()</code> превращают <code>message.components</code> обратно в билдер.</p>
+        </div>
+        <div class="feature">
+          <div class="icon">✂️</div>
+          <h3>Утилиты редактирования</h3>
+          <p><code>editComponents()</code> / <code>ComponentsEditor</code>: удалить, заменить, переместить, отключить кнопки, переписать текст.</p>
+        </div>
+        <div class="feature">
+          <div class="icon">📝</div>
+          <h3>Модальные окна V2</h3>
+          <p><code>V2ModalBuilder</code>: плоские описания полей, типизированный разбор сабмита (<code>parseSubmit</code>), валидация и <code>rule()</code>.</p>
+        </div>
+        <div class="feature">
+          <div class="icon">🆔</div>
+          <h3>Состояние в customId</h3>
+          <p><code>CustomIdBuilder</code> — кодек <code>name:entityId:executorId</code> с гарантией ≤ 100 символов.</p>
+        </div>
+        <div class="feature">
+          <div class="icon">🛡️</div>
+          <h3>Валидация</h3>
+          <p><code>validateComponents()</code> / <code>build()</code> ловят лимиты Discord до отправки.</p>
+        </div>
+        <div class="feature">
+          <div class="icon">🧩</div>
+          <h3>Шаблоны и пагинация</h3>
+          <p><code>V2Template</code> — слоты и сентинелы; <code>V2Paginator</code> — бесстейтовые страницы без кэша.</p>
+        </div>
+      </div>
+
+      <h2>Как читать документацию</h2>
+      <p>Путь с нуля:</p>
+      <ol>
+        <li><a href="getting-started.html">Установка и быстрый старт</a> — первый payload за минуту.</li>
+        <li><a href="builder.html">V2Builder</a> — из чего собирать сообщения.</li>
+        <li><a href="parsing.html">Разбор без кэша</a> — что происходит с сообщением после отправки.</li>
+        <li><a href="editing.html">Редактирование</a> — точечные правки и селекторы.</li>
+        <li><a href="modal.html">Модальные окна</a> и <a href="customid.html">customId</a> — интерактив и состояние.</li>
+        <li><a href="template.html">Шаблоны и пагинация</a> — готовые модули V2Template/V2Paginator.</li>
+        <li><a href="pagination.html">Пагинация вручную</a> — реальный паттерн на основе этих фич.</li>
+      </ol>
+
+      <div class="pagination-nav">
+        <a class="page-link" href="getting-started.html"><small>Далее</small>Установка и быстрый старт →</a>
+      </div>
+    </main>
+  </div>
+
+</body>
+</html>

@@ -4,28 +4,16 @@ import {
   ComponentType,
   editComponents,
   findComponents,
-  getActionRow,
-  getActionRows,
-  getMediaGalleries,
-  getSection,
-  getSections,
-  getSeparator,
-  getSeparators,
-  getTextDisplays,
-  moveSection,
-  moveSeparator,
+  getAllByKind,
+  getByKind,
   parseComponents,
   parseEmoji,
-  removeActionRow,
-  removeMediaGallery,
-  removeSection,
-  removeSeparator,
-  removeTextDisplay,
-  replaceSection,
-  replaceSeparator,
+  removeByKind,
+  replaceByKind,
   V2Builder,
   validateComponents,
 } from "../../dist/index.js";
+import { keepOnly, moveByKind } from "../../dist/advanced.js";
 
 const CONTAINER = ComponentType.Container;
 const TEXT = ComponentType.TextDisplay;
@@ -382,9 +370,9 @@ test("editor: removeSelectMenus removes only matching kinds", () => {
   );
 });
 
-test("editor: removeSelectMenu alias + custom_id filter", () => {
+test("editor: removeSelectMenus with a type array filter", () => {
   const edited = editComponents(makeMultiSelect())
-    .removeSelectMenu({ type: ["string", "user"] })
+    .removeSelectMenus({ type: ["string", "user"] })
     .toJSON();
   const selects = flatten(edited).filter(
     (c) => c.type === ComponentType.StringSelect || c.type === ComponentType.UserSelect || c.type === ComponentType.RoleSelect,
@@ -540,8 +528,13 @@ test("editor: renameCustomId renames everywhere and throws when missing", () => 
   assert.throws(() => editComponents(makeMultiSelect()).renameCustomId("nope", "x"));
 });
 
-test("editor: keepOnly keeps matching subtree", () => {
-  const edited = editComponents(makeBuilt()).keepOnly("join").toJSON();
+test("advanced: keepOnly keeps matching subtree", () => {
+  const payload = makeBuilt();
+  const container = payload.components[0];
+  const children = container.components; // owned array, mutated in place
+  const kept = keepOnly(children, "join");
+  assert.equal(kept, children);
+  const edited = [container];
   const buttons = flatten(edited).filter((c) => c.type === BUTTON);
   assert.equal(buttons.length, 1);
   assert.equal(buttons[0].custom_id, "join");
@@ -637,9 +630,9 @@ function makeSectionsBuilder() {
     .buttons({ id: "final", label: "Final" });
 }
 
-test("getSections: returns all sections with correct indices", () => {
+test("all sections: returns all sections with correct indices", () => {
   const builder = makeSectionsBuilder();
-  const sections = builder.getSections();
+  const sections = builder.all("section");
   assert.equal(sections.length, 3);
   assert.equal(sections[0].index, 0);
   assert.equal(sections[1].index, 1);
@@ -649,69 +642,68 @@ test("getSections: returns all sections with correct indices", () => {
   assert.equal(sections[2].component.type, ComponentType.Section);
 });
 
-test("getSections: containerIndex reflects position in container array", () => {
+test("all sections: containerIndex reflects position in container array", () => {
   const builder = makeSectionsBuilder();
-  const sections = builder.getSections();
+  const sections = builder.all("section");
   // container: [text(0), sep(1), section(2), sep(3), section(4), sep(5), section(6), row(7)]
   assert.equal(sections[0].containerIndex, 2);
   assert.equal(sections[1].containerIndex, 4);
   assert.equal(sections[2].containerIndex, 6);
 });
 
-test("getSection: returns specific section by index", () => {
+test("get section: returns specific section by index", () => {
   const builder = makeSectionsBuilder();
-  const s = builder.getSection(1);
+  const s = builder.get("section", 1);
   assert.ok(s);
   assert.equal(s.index, 1);
   // Second section has the button accessory
   assert.equal(s.component.accessory.custom_id, "btn2");
 });
 
-test("getSection: returns null for out-of-bounds", () => {
+test("get section: returns null for out-of-bounds", () => {
   const builder = makeSectionsBuilder();
-  assert.equal(builder.getSection(5), null);
-  assert.equal(builder.getSection(-1), null);
-  assert.equal(builder.getSection(NaN), null);
+  assert.equal(builder.get("section", 5), null);
+  assert.equal(builder.get("section", -1), null);
+  assert.equal(builder.get("section", NaN), null);
 });
 
-test("removeSection: removes section by index", () => {
+test("remove section: removes section by index", () => {
   const builder = makeSectionsBuilder();
-  const removed = builder.removeSection(1);
-  assert.ok(removed);
-  const sections = builder.getSections();
+  const removed = builder.remove("section", 1);
+  assert.equal(removed, builder); // chainable
+  const sections = builder.all("section");
   assert.equal(sections.length, 2);
   // First and third remain
   assert.equal(sections[0].component.accessory.type, ComponentType.Thumbnail);
   assert.equal(sections[1].component.accessory.type, ComponentType.Thumbnail);
 });
 
-test("removeSection: returns false for out-of-bounds", () => {
+test("remove section: no-op out-of-bounds", () => {
   const builder = makeSectionsBuilder();
-  // V2Builder.removeSection returns this (for chaining), but nothing changes
-  builder.removeSection(10);
-  assert.equal(builder.getSections().length, 3);
+  builder.remove("section", 10);
+  assert.equal(builder.all("section").length, 3);
 });
 
-test("removeSection: via ComponentsEditor", () => {
+test("remove section: via ComponentsEditor", () => {
   const raw = makeSectionsBuilder().toJSON();
   const editor = editComponents(raw);
-  editor.removeSection(0);
-  const sections = editor.getSections();
+  editor.remove("section", 0);
+  const sections = editor.all("section");
   assert.equal(sections.length, 2);
   // The first remaining section should be the one originally at index 1 (btn2)
   assert.equal(sections[0].component.accessory.custom_id, "btn2");
 });
 
-test("replaceSection: replaces section in-place", () => {
+test("replace section: replaces section in-place", () => {
   const builder = makeSectionsBuilder();
   const newSection = {
     type: ComponentType.Section,
     components: [{ type: ComponentType.TextDisplay, content: "**Replaced**\nNew content" }],
     accessory: { type: ComponentType.Thumbnail, media: { url: "https://x/new.png" } },
   };
-  const replaced = builder.replaceSection(0, newSection);
-  assert.ok(replaced);
-  const sections = builder.getSections();
+  const replaced = builder.replace({ kind: "section", index: 0 }, newSection);
+  assert.equal(replaced, builder); // chainable
+  const sections = builder.all("section");
   assert.equal(sections.length, 3);
   // First section replaced
   assert.ok(sections[0].component.components[0].content.includes("Replaced"));
@@ -719,20 +711,18 @@ test("replaceSection: replaces section in-place", () => {
   assert.equal(sections[1].component.accessory.custom_id, "btn2");
 });
 
-test("replaceSection: returns false for out-of-bounds", () => {
+test("replace section: no-op out-of-bounds", () => {
   const builder = makeSectionsBuilder();
-  const newSection = { type: ComponentType.Section, components: [], accessory: null };
-  // V2Builder.replaceSection returns this (for chaining)
-  builder.replaceSection(10, newSection);
+  builder.replace({ kind: "section", index: 10 }, { type: ComponentType.Section, components: [], accessory: null });
   // Nothing changed — still 3 sections
-  assert.equal(builder.getSections().length, 3);
+  assert.equal(builder.all("section").length, 3);
 });
 
-test("moveSection: reorders sections", () => {
+test("move section: reorders sections", () => {
   const builder = makeSectionsBuilder();
-  const moved = builder.moveSection(2, 0);
-  assert.ok(moved);
-  const sections = builder.getSections();
+  const moved = builder.move("section", 2, 0);
+  assert.equal(moved, builder); // chainable
+  const sections = builder.all("section");
   assert.equal(sections.length, 3);
   // Third section is now first
   assert.equal(sections[0].component.components[0].content.includes("Third"), true);
@@ -742,29 +732,30 @@ test("moveSection: reorders sections", () => {
   assert.equal(sections[2].component.components[0].content.includes("Second"), true);
 });
 
-test("moveSection: moving to end", () => {
+test("move section: moving to end", () => {
   const builder = makeSectionsBuilder();
-  builder.moveSection(0, 5);
-  const sections = builder.getSections();
+  builder.move("section", 0, 5);
+  const sections = builder.all("section");
   assert.equal(sections.length, 3);
   // Original first is now last
   assert.equal(sections[2].component.components[0].content.includes("First"), true);
 });
 
-test("moveSection: returns false when from is out-of-bounds", () => {
+test("move section: no-op when from is out-of-bounds", () => {
   const builder = makeSectionsBuilder();
-  // V2Builder.moveSection returns this (for chaining)
-  builder.moveSection(10, 0);
+  builder.move("section", 10, 0);
   // Nothing changed
-  assert.equal(builder.getSections().length, 3);
+  assert.equal(builder.all("section").length, 3);
 });
 
 test("section management: chaining works", () => {
-  const builder = makeSectionsBuilder().removeSection(1).moveSection(0, 1);
-  const sections = builder.getSections();
+  const builder = makeSectionsBuilder()
+    .remove("section", 1)
+    .move("section", 0, 1);
+  const sections = builder.all("section");
   assert.equal(sections.length, 2);
-  // removeSection(1) → removes Second; remaining: [First, Third]
-  // moveSection(0, 1) → moves First after Third; result: [Third, First]
+  // remove(1) → removes Second; remaining: [First, Third]
+  // move(0, 1) → moves First after Third; result: [Third, First]
   assert.equal(sections[0].component.components[0].content.includes("Third"), true);
   assert.equal(sections[1].component.components[0].content.includes("First"), true);
 });
@@ -772,24 +763,47 @@ test("section management: chaining works", () => {
 test("section management: parse then manipulate", () => {
   const original = makeSectionsBuilder().build();
   const parsed = parseComponents(original);
-  parsed.removeSection(0);
+  parsed.remove("section", 0);
   const rebuilt = parsed.build();
-  const sections = getSections(rebuilt.components[0].components);
+  const sections = getAllByKind(rebuilt.components[0].components, "section");
   assert.equal(sections.length, 2);
 });
 
 test("section management: standalone functions work on raw arrays", () => {
   const raw = makeSectionsBuilder().toJSON();
   const container = raw; // root is the container
-  const sections = getSections(container.components);
+  const sections = getAllByKind(container.components, "section");
   assert.equal(sections.length, 3);
 
-  removeSection(container.components, 1);
-  assert.equal(getSections(container.components).length, 2);
+  removeByKind(container.components, "section", 1);
+  assert.equal(getAllByKind(container.components, "section").length, 2);
 
-  moveSection(container.components, 0, 1);
-  const after = getSections(container.components);
+  replaceByKind(container.components, "section", 0, {
+    type: ComponentType.Section,
+    components: [{ type: ComponentType.TextDisplay, content: "**Swap**\nReplaced" }],
+    accessory: { type: ComponentType.Thumbnail, media: { url: "https://x/swapped.png" } },
+  });
+  const afterReplace = getAllByKind(container.components, "section");
+  assert.ok(afterReplace[0].component.components[0].content.includes("Swap"));
+
+  moveByKind(container.components, "section", 0, 1);
+  const after = getAllByKind(container.components, "section");
   assert.equal(after[0].component.components[0].content.includes("Third"), true);
+});
+
+test("section management: namespace accessors", () => {
+  const builder = makeSectionsBuilder();
+  assert.equal(builder.sections.all().length, 3);
+  assert.equal(builder.sections.get(1).component.accessory.custom_id, "btn2");
+  builder.sections.remove(1).sections.move(0, 1);
+  const sections = builder.sections.all();
+  assert.equal(sections.length, 2);
+  assert.equal(sections[0].component.components[0].content.includes("Third"), true);
+
+  const editor = editComponents(makeSectionsBuilder().toJSON());
+  editor.sections.remove(0);
+  assert.equal(editor.sections.all().length, 2);
+  assert.equal(editor.sections.get(0).component.accessory.custom_id, "btn2");
 });
 
 // ------------------------------------------------------------------
@@ -812,9 +826,9 @@ function makeSeparatorsBuilder() {
     .mediaUrl("https://x/g.png");
 }
 
-test("getSeparators: returns all separators with correct indices", () => {
+test("all separators: returns all separators with correct indices", () => {
   const builder = makeSeparatorsBuilder();
-  const seps = builder.getSeparators();
+  const seps = builder.all("separator");
   assert.equal(seps.length, 4);
   assert.deepEqual(
     seps.map((s) => s.index),
@@ -823,27 +837,27 @@ test("getSeparators: returns all separators with correct indices", () => {
   assert.ok(seps.every((s) => s.component.type === SEP));
 });
 
-test("getSeparators: containerIndex reflects position in container array", () => {
+test("all separators: containerIndex reflects position in container array", () => {
   const builder = makeSeparatorsBuilder();
-  const seps = builder.getSeparators();
+  const seps = builder.all("separator");
   assert.deepEqual(
     seps.map((s) => s.containerIndex),
     [1, 3, 5, 7],
   );
 });
 
-test("getSeparator: returns a specific separator and null out-of-bounds", () => {
+test("get separator: returns a specific separator and null out-of-bounds", () => {
   const builder = makeSeparatorsBuilder();
-  assert.equal(builder.getSeparator(2).containerIndex, 5);
-  assert.equal(builder.getSeparator(10), null);
-  assert.equal(builder.getSeparator(-1), null);
-  assert.equal(builder.getSeparator(NaN), null);
+  assert.equal(builder.get("separator", 2).containerIndex, 5);
+  assert.equal(builder.get("separator", 10), null);
+  assert.equal(builder.get("separator", -1), null);
+  assert.equal(builder.get("separator", NaN), null);
 });
 
-test("removeSeparator: removes the right separator and keeps a valid body", () => {
+test("remove separator: removes the right separator and keeps a valid body", () => {
   const builder = makeSeparatorsBuilder();
-  builder.removeSeparator(1); // the separator right after the section
-  const seps = builder.getSeparators();
+  builder.remove("separator", 1); // the separator right after the section
+  const seps = builder.all("separator");
   assert.equal(seps.length, 3);
   // original containerIndexes [1,3,5,7]; removing position 3 shifts the rest down
   assert.deepEqual(
@@ -856,33 +870,32 @@ test("removeSeparator: removes the right separator and keeps a valid body", () =
   assert.equal(validateComponents(payload.components).valid, true);
 });
 
-test("removeSeparator: via ComponentsEditor", () => {
+test("remove separator: via ComponentsEditor", () => {
   const editor = editComponents(makeSeparatorsBuilder().toJSON());
-  editor.removeSeparator(0);
-  const seps = editor.getSeparators();
+  editor.remove("separator", 0);
+  const seps = editor.all("separator");
   assert.equal(seps.length, 3);
 });
 
-test("replaceSeparator: replaces in-place and keeps shape", () => {
+test("replace separator: replaces in-place and keeps shape", () => {
   const builder = makeSeparatorsBuilder();
   const replacement = { type: SEP, spacing: 2, divider: false };
-  const ok = builder.replaceSeparator(0, replacement);
-  assert.ok(ok);
-  assert.deepEqual(builder.getSeparator(0).component, replacement);
+  const ok = builder.replace({ kind: "separator", index: 0 }, replacement);
+  assert.equal(ok, builder); // chainable
+  assert.deepEqual(builder.get("separator", 0).component, replacement);
   assert.equal(builder.toJSON().components[1].type, SEP);
 });
 
-test("replaceSeparator: returns same builder for chaining, no-op out-of-bounds", () => {
+test("replace separator: no-op out-of-bounds", () => {
   const builder = makeSeparatorsBuilder();
-  const result = builder.replaceSeparator(10, { type: SEP });
-  assert.equal(result, builder); // chainable
-  assert.equal(builder.getSeparators().length, 4); // nothing changed
+  builder.replace({ kind: "separator", index: 10 }, { type: SEP });
+  assert.equal(builder.all("separator").length, 4); // nothing changed
 });
 
-test("moveSeparator: reorders separators", () => {
+test("move separator: reorders separators", () => {
   const builder = makeSeparatorsBuilder();
-  builder.moveSeparator(0, 2); // move first separator to third slot
-  const seps = builder.getSeparators();
+  builder.move("separator", 0, 2); // move first separator to third slot
+  const seps = builder.all("separator");
   assert.equal(seps.length, 4);
   // order becomes [orig1, orig2, orig0, orig3]
   assert.deepEqual(
@@ -891,9 +904,12 @@ test("moveSeparator: reorders separators", () => {
   );
 });
 
-test("removeSeparator: chain of removals keeps build() valid", () => {
-  const builder = makeSeparatorsBuilder().removeSeparator(0).removeSeparator(0).removeSeparator(0);
-  assert.equal(builder.getSeparators().length, 1);
+test("remove separator: chain of removals keeps build() valid", () => {
+  const builder = makeSeparatorsBuilder()
+    .remove("separator", 0)
+    .remove("separator", 0)
+    .remove("separator", 0);
+  assert.equal(builder.all("separator").length, 1);
   const payload = builder.build(); // must not throw
   assert.equal(payload.components[0].components.filter((c) => c.type === SEP).length, 1);
 });
@@ -901,59 +917,67 @@ test("removeSeparator: chain of removals keeps build() valid", () => {
 test("separators: standalone functions work on raw container children", () => {
   const raw = makeSeparatorsBuilder().toJSON();
   const children = raw.components;
-  assert.equal(getSeparators(children).length, 4);
-  assert.equal(getSeparator(children, 1).containerIndex, 3);
-  assert.equal(removeSeparator(children, 1), true);
-  assert.equal(getSeparators(children).length, 3);
-  assert.equal(moveSeparator(children, 0, 2), true);
+  assert.equal(getAllByKind(children, "separator").length, 4);
+  assert.equal(getByKind(children, "separator", 1).containerIndex, 3);
+  assert.equal(removeByKind(children, "separator", 1), true);
+  assert.equal(getAllByKind(children, "separator").length, 3);
+  assert.equal(moveByKind(children, "separator", 0, 2), true);
 });
 
 // ------------------------------------------------------------------
 // TextDisplay / MediaGallery / ActionRow management tests
 // ------------------------------------------------------------------
 
-test("getTextDisplays / removeTextDisplay", () => {
-  const builder = makeSeparatorsBuilder(); // two text blocks
-  const texts = builder.getTextDisplays();
+test("textDisplays / actionRows / mediaGalleries kind access", () => {
+  const builder = makeSeparatorsBuilder(); // two text blocks, one row, one gallery
+  const texts = builder.all("textDisplay");
   assert.equal(texts.length, 2);
-  assert.equal(builder.getTextDisplay(0).component.content, "Header");
+  assert.equal(builder.get("textDisplay", 0).component.content, "Header");
 
-  builder.removeTextDisplay(1); // remove "Middle"
-  assert.equal(builder.getTextDisplays().length, 1);
-  assert.equal(builder.getTextDisplay(0).component.content, "Header");
+  builder.remove("textDisplay", 1); // remove "Middle"
+  assert.equal(builder.all("textDisplay").length, 1);
+  assert.equal(builder.get("textDisplay", 0).component.content, "Header");
 
   // still a valid payload
   assert.equal(validateComponents(builder.build().components).valid, true);
 });
 
-test("getActionRows / removeActionRow", () => {
+test("actionRows: kind access and removal", () => {
   const builder = makeSeparatorsBuilder(); // one buttons row
-  assert.equal(builder.getActionRows().length, 1);
-  assert.equal(builder.getActionRow(0).component.components.length, 1);
-  assert.equal(builder.getActionRow(5), null);
+  assert.equal(builder.all("actionRow").length, 1);
+  assert.equal(builder.get("actionRow", 0).component.components.length, 1);
+  assert.equal(builder.get("actionRow", 5), null);
 
-  builder.removeActionRow(0);
-  assert.equal(builder.getActionRows().length, 0);
+  builder.remove("actionRow", 0);
+  assert.equal(builder.all("actionRow").length, 0);
   assert.equal(builder.toJSON().components.filter((c) => c.type === ROW).length, 0);
   assert.equal(validateComponents(builder.build().components).valid, true);
 });
 
-test("getMediaGalleries / removeMediaGallery", () => {
+test("mediaGalleries: kind access and removal", () => {
   const builder = makeSeparatorsBuilder(); // one gallery at the end
-  assert.equal(builder.getMediaGalleries().length, 1);
-  assert.equal(builder.getMediaGallery(0).component.type, ComponentType.MediaGallery);
+  assert.equal(builder.all("mediaGallery").length, 1);
+  assert.equal(builder.get("mediaGallery", 0).component.type, ComponentType.MediaGallery);
 
-  const gallery = builder.getMediaGallery(0);
+  const gallery = builder.get("mediaGallery", 0);
   assert.equal(gallery.component.items[0].media.url, "https://x/g.png");
 
-  builder.removeMediaGallery(0);
-  assert.equal(builder.getMediaGalleries().length, 0);
+  builder.remove("mediaGallery", 0);
+  assert.equal(builder.all("mediaGallery").length, 0);
   assert.equal(validateComponents(builder.build().components).valid, true);
+});
+
+test("alone-standing kind namespaces set strings for text displays", () => {
+  const builder = makeSeparatorsBuilder();
+  builder.textDisplays.set(1, "Замена");
+  assert.equal(builder.get("textDisplay", 1).component.content, "Замена");
+  assert.throws(() => builder.sections.set(0, "nope"), /plain strings/);
+  assert.throws(() => builder.textDisplays.set(9, "x"), /no textDisplay at index 9/);
 });
 
 test("layout management: robust to full removal via editor", () => {
   const editor = editComponents(makeSeparatorsBuilder().toJSON());
-  editor.removeSeparator(0).removeSeparator(0).removeTextDisplay(0);
+  editor.remove("separator", 0).remove("separator", 0).remove("textDisplay", 0);
 
   const payload = editor.toJSON();
   assert.equal(validateComponents(payload).valid, true);

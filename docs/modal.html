@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="dark light" />
+  <title>Модальные окна — discordjs-components-v2</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%232f6bff'/%3E%3Cstop offset='1' stop-color='%237fb0ff'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='100' height='100' rx='24' fill='url(%23g)'/%3E%3Ctext x='50' y='70' font-family='Arial' font-size='52' font-weight='900' fill='white' text-anchor='middle'%3EC2%3C/text%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+  <script defer src="js/prism/prism-core.min.js"></script>
+  <script defer src="js/prism/prism-clike.min.js"></script>
+  <script defer src="js/prism/prism-javascript.min.js"></script>
+  <script defer src="js/prism/prism-typescript.min.js"></script>
+  <script defer src="js/prism/prism-bash.min.js"></script>
+  <script defer src="js/prism/prism-json.min.js"></script>
+  <script defer src="js/prism/prism-markup.min.js"></script>
+  <script defer src="js/main.js"></script>
+</head>
+<body>
+
+  <nav class="navbar">
+    <a class="brand" href="index.html"><span class="brand-logo">C2</span>discordjs-components-v2</a>
+    <div class="nav-links">
+      <a href="index.html">Документация</a>
+      <a href="pagination.html">Пагинация</a>
+    </div>
+    <button class="icon-btn hamburger" id="sidebar-toggle" type="button" aria-label="Меню">☰</button>
+    <div class="nav-right">
+      <button class="icon-btn" id="theme-toggle" type="button" aria-label="Сменить тему" title="Сменить тему">
+        <span class="icon-dark" aria-hidden="true">🌙</span>
+        <span class="icon-light" aria-hidden="true">☀️</span>
+      </button>
+      <span class="nav-version">v2.2.0</span>
+    </div>
+  </nav>
+
+  <div class="layout">
+    <nav class="sidebar">
+      <p class="sidebar-title">Начало</p>
+      <div class="sidebar-nav">
+        <a href="index.html"><span class="nav-ico" aria-hidden="true">🏠</span>Введение</a>
+        <a href="getting-started.html"><span class="nav-ico" aria-hidden="true">🚀</span>Установка и быстрый старт</a>
+      </div>
+      <p class="sidebar-title">Библиотека</p>
+      <div class="sidebar-nav">
+        <a href="builder.html"><span class="nav-ico" aria-hidden="true">🧱</span>V2Builder</a>
+        <a href="parsing.html"><span class="nav-ico" aria-hidden="true">♻️</span>Разбор без кэша</a>
+        <a href="editing.html"><span class="nav-ico" aria-hidden="true">✂️</span>Редактирование</a>
+        <a href="layout.html"><span class="nav-ico" aria-hidden="true">🗂️</span>Секции и layout</a>
+        <a href="template.html"><span class="nav-ico" aria-hidden="true">🧩</span>Шаблоны и пагинация</a>
+        <a class="active" href="modal.html"><span class="nav-ico" aria-hidden="true">📝</span>Модальные окна</a>
+        <a href="customid.html"><span class="nav-ico" aria-hidden="true">🆔</span>customId и состояние</a>
+        <a href="validation.html"><span class="nav-ico" aria-hidden="true">🛡️</span>Валидация</a>
+      </div>
+      <p class="sidebar-title">Паттерны</p>
+      <div class="sidebar-nav">
+        <a href="pagination.html"><span class="nav-ico" aria-hidden="true">📄</span>Пагинация вручную</a>
+      </div>
+    </nav>
+
+    <div class="sidebar-mask" id="sidebar-mask"></div>
+
+    <main class="content">
+      <div class="page-hero">
+        <p class="kicker">Modals</p>
+        <h1>Модальные окна</h1>
+        <p class="tagline">Формы Components V2 плоскими объектами: без ручного жонглирования LabelBuilder.</p>
+      </div>
+
+      <p>
+        Вместо низкоуровневой работы с <code>LabelBuilder</code> и внутренними билдерами вы
+        описываете форму плоскими объектами. Каждое интерактивное поле автоматически оборачивается
+        в <code>LabelBuilder</code>.
+      </p>
+
+      <div class="code-block">
+        <div class="code-header"><span class="lang">ts</span><button class="copy-btn" type="button"><span aria-hidden="true">⧉</span> Копировать</button></div>
+        <pre><code class="language-ts">import { V2ModalBuilder } from "discordjs-components-v2";
+
+const modal = new V2ModalBuilder()
+  .setTitle("Создание набора")
+  .setCustomId(`createNabor_modal:${executorId}`)
+  .textInput({
+    label: "Название набора",
+    customId: "name_nabor",
+    required: true,
+  })
+  .roleSelect({ label: "Выберите роль", customId: "give_role", required: true })
+  .channelSelect({ label: "Канал публикации", customId: "publish_channel", maxValues: 1, minValues: 1, channelTypes: [0] })
+  .radioGroup({
+    label: "Тип ввода",
+    customId: "type_input",
+    options: [
+      { label: "Однострочный", value: "short", description: "Одна строка" },
+      { label: "Многострочный", value: "long", description: "Одна и более" },
+    ],
+  })
+  .build();
+
+await interaction.showModal(modal);</code></pre>
+      </div>
+
+      <h2>Поля формы</h2>
+      <p>
+        <code>.textInput(...)</code> — стиль <code>"short"</code>/<code>"paragraph"</code>,
+        <code>value</code> — префилл (<code>undefined</code> безопасно — просто не ставится).
+        Также: <code>.roleSelect</code>, <code>.channelSelect</code>, <code>.userSelect</code>,
+        <code>.mentionableSelect</code>, <code>.stringSelect</code> (эмодзи строкой) и
+        <code>.radioGroup({ options })</code>. Плюс <code>.setTitle()</code> /
+        <code>.setCustomId()</code> / <code>.build()</code>.
+      </p>
+
+      <h2>Изменение полей после добавления</h2>
+      <p>
+        Значение часто известно только после проверок (например, при редактировании вопроса).
+        Каждое поле доступно по <code>customId</code> как живой discord.js-билдер:
+      </p>
+      <div class="code-block">
+        <div class="code-header"><span class="lang">ts</span><button class="copy-btn" type="button"><span aria-hidden="true">⧉</span> Копировать</button></div>
+        <pre><code class="language-ts">const v2Modal = new V2ModalBuilder({ customId, title })
+  .textInput({ label: "Укажите текст вопроса", customId: "question", minLength: 5, maxLength: 45 })
+  .textInput({ label: "Подсказка", customId: "placeholder", style: "paragraph" })
+  .radioGroup({ label: "Тип ввода", customId: "type_input", options });
+
+if (isUpdate) v2Modal.setTextInputValue("question", questionData.label);
+
+const input = v2Modal.component("placeholder"); // живой TextInputBuilder
+input.setPlaceholder("новый placeholder");      // мутируем напрямую
+input.setRequired(true);
+
+await ctx.showModal(v2Modal.build());</code></pre>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Метод</th><th>Что даёт</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>.component(customId)</code></td><td>живой билдер поля или <code>undefined</code></td></tr>
+            <tr><td><code>.textInputComponent(customId)</code></td><td><code>TextInputBuilder | undefined</code> — только текстовые поля</td></tr>
+            <tr><td><code>.setTextInputValue(customId, value)</code></td><td>цепляющийся сеттер значения (<code>this</code>)</td></tr>
+            <tr><td><code>.inner</code></td><td>лежащий в основе discord.js <code>ModalBuilder</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2>Дефолты селектов и радио</h2>
+      <div class="code-block">
+        <div class="code-header"><span class="lang">ts</span><button class="copy-btn" type="button"><span aria-hidden="true">⧉</span> Копировать</button></div>
+        <pre><code class="language-ts">const modal = new V2ModalBuilder({ title: "Фильтр", customId: "filter" })
+  .stringSelect({ label: "Каналы", customId: "chs", options })
+  .radioGroup({ label: "Направление", customId: "dir", options: dirOptions });
+
+if (savedFilter) {
+  modal.setStringSelectDefaults("chs", savedFilter.channels);
+  modal.setRadioGroupDefault("dir", savedFilter.direction);
+}</code></pre>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Метод</th><th>Аргументы</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>.setRadioGroupDefault(id, value)</code></td><td>отметить вариант радио (кидает, если варианта нет)</td></tr>
+            <tr><td><code>.setStringSelectDefaults(id, values[])</code></td><td>отметить значения мультиселекта</td></tr>
+            <tr><td><code>.setRoleSelectDefaults(id, roleIds[])</code></td><td>дефолтные роли</td></tr>
+            <tr><td><code>.setChannelSelectDefaults(id, channelIds[])</code></td><td>дефолтные каналы</td></tr>
+            <tr><td><code>.setUserSelectDefaults(id, userIds[])</code></td><td>дефолтные пользователи</td></tr>
+            <tr><td><code>.setMentionableSelectDefaults(id, defaults[])</code></td><td><code>{ id, type: "user" | "role" }[]</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2>Разбор сабмита</h2>
+      <p>
+        <code>parseSubmit()</code> читает значения по <code>customId</code> прямо из интеракции в
+        типизированный объект — без кастов и поштучных <code>getTextInputValue()</code>:
+      </p>
+      <div class="code-block">
+        <div class="code-header"><span class="lang">ts</span><button class="copy-btn" type="button"><span aria-hidden="true">⧉</span> Копировать</button></div>
+        <pre><code class="language-ts">const query = modal.parseSubmit(interaction); // ModalSubmitInteraction
+
+query.name_nabor;      // string — textInput
+query.type_input;      // string | null — radio
+query.give_role;       // string[] | null — id ролей (или users/channels/mentionables)
+query.publish_channel; // string[] | null</code></pre>
+      </div>
+      <p>
+        Состав берётся из добавленных полей: <code>.getSchema()</code> → массив
+        <code>{ customId, kind }</code> (<code>"text_input" | "radio_group" | ... | "mentionable_select"</code>).
+        Для полей вне билдера есть standalone <code>parseModalSubmit(interaction, schema)</code>.
+      </p>
+
+      <h2>Восстановление из JSON</h2>
+      <p><code>.from()</code> пересобирает модалку из JSON или discord.js <code>ModalBuilder</code> — удобно при миграции или хранении пресетов:</p>
+      <div class="code-block">
+        <div class="code-header"><span class="lang">ts</span><button class="copy-btn" type="button"><span aria-hidden="true">⧉</span> Копировать</button></div>
+        <pre><code class="language-ts">const rebuilt = V2ModalBuilder.from(savedModalJson).build();</code></pre>
+      </div>
+
+      <h2>Валидация, rule() и show()</h2>
+      <p>
+        <code>build()</code> проверяет форму и кидает <code>Error</code> со списком проблем:
+        отсутствие <code>title</code>/<code>custom_id</code>, дубликаты <code>customId</code>,
+        <code>minLength &gt; maxLength</code>, <code>minValues &gt; maxValues</code>, ошибки
+        пользовательских правил.
+      </p>
+      <div class="code-block">
+        <div class="code-header"><span class="lang">ts</span><button class="copy-btn" type="button"><span aria-hidden="true">⧉</span> Копировать</button></div>
+        <pre><code class="language-ts">const modal = new V2ModalBuilder({ title: "Диапазон", customId: "range" })
+  .textInput({ label: "min", customId: "min_values" })
+  .textInput({ label: "max", customId: "max_values" })
+  .rule((b) => {
+    const min = Number(b.textInputComponent("min_values")?.data.value);
+    const max = Number(b.textInputComponent("max_values")?.data.value);
+    return Number.isFinite(min) &amp;&amp; Number.isFinite(max) &amp;&amp; min &gt; max
+      ? "min не может быть больше max"
+      : null;
+  });
+
+modal.setTextInputValue("min_values", "10").setTextInputValue("max_values", "5");
+modal.build(); // throws — правило вернуло текст ошибки
+
+// .validate() → массив строк-проблем (пустой = всё ок)
+// .show(interaction) → эквивалент showModal(modal.build())
+await newsV2Modal.show(interaction);</code></pre>
+      </div>
+
+      <div class="pagination-nav">
+        <a class="page-link" href="template.html"><small>Назад</small>← Шаблоны и пагинация</a>
+        <a class="page-link next" href="customid.html"><small>Далее</small>customId и состояние →</a>
+      </div>
+    </main>
+  </div>
+
+</body>
+</html>

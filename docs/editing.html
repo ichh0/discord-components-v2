@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="dark light" />
+  <title>Редактирование — discordjs-components-v2</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%232f6bff'/%3E%3Cstop offset='1' stop-color='%237fb0ff'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='100' height='100' rx='24' fill='url(%23g)'/%3E%3Ctext x='50' y='70' font-family='Arial' font-size='52' font-weight='900' fill='white' text-anchor='middle'%3EC2%3C/text%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+  <script defer src="js/prism/prism-core.min.js"></script>
+  <script defer src="js/prism/prism-clike.min.js"></script>
+  <script defer src="js/prism/prism-javascript.min.js"></script>
+  <script defer src="js/prism/prism-typescript.min.js"></script>
+  <script defer src="js/prism/prism-bash.min.js"></script>
+  <script defer src="js/prism/prism-json.min.js"></script>
+  <script defer src="js/prism/prism-markup.min.js"></script>
+  <script defer src="js/main.js"></script>
+</head>
+<body>
+
+  <nav class="navbar">
+    <a class="brand" href="index.html"><span class="brand-logo">C2</span>discordjs-components-v2</a>
+    <div class="nav-links">
+      <a href="index.html">Документация</a>
+      <a href="pagination.html">Пагинация</a>
+    </div>
+    <button class="icon-btn hamburger" id="sidebar-toggle" type="button" aria-label="Меню">☰</button>
+    <div class="nav-right">
+      <button class="icon-btn" id="theme-toggle" type="button" aria-label="Сменить тему" title="Сменить тему">
+        <span class="icon-dark" aria-hidden="true">🌙</span>
+        <span class="icon-light" aria-hidden="true">☀️</span>
+      </button>
+      <span class="nav-version">v2.2.0</span>
+    </div>
+  </nav>
+
+  <div class="layout">
+    <nav class="sidebar">
+      <p class="sidebar-title">Начало</p>
+      <div class="sidebar-nav">
+        <a href="index.html"><span class="nav-ico" aria-hidden="true">🏠</span>Введение</a>
+        <a href="getting-started.html"><span class="nav-ico" aria-hidden="true">🚀</span>Установка и быстрый старт</a>
+      </div>
+      <p class="sidebar-title">Библиотека</p>
+      <div class="sidebar-nav">
+        <a href="builder.html"><span class="nav-ico" aria-hidden="true">🧱</span>V2Builder</a>
+        <a href="parsing.html"><span class="nav-ico" aria-hidden="true">♻️</span>Разбор без кэша</a>
+        <a class="active" href="editing.html"><span class="nav-ico" aria-hidden="true">✂️</span>Редактирование</a>
+        <a href="layout.html"><span class="nav-ico" aria-hidden="true">🗂️</span>Секции и layout</a>
+        <a href="template.html"><span class="nav-ico" aria-hidden="true">🧩</span>Шаблоны и пагинация</a>
+        <a href="modal.html"><span class="nav-ico" aria-hidden="true">📝</span>Модальные окна</a>
+        <a href="customid.html"><span class="nav-ico" aria-hidden="true">🆔</span>customId и состояние</a>
+        <a href="validation.html"><span class="nav-ico" aria-hidden="true">🛡️</span>Валидация</a>
+      </div>
+      <p class="sidebar-title">Паттерны</p>
+      <div class="sidebar-nav">
+        <a href="pagination.html"><span class="nav-ico" aria-hidden="true">📄</span>Пагинация вручную</a>
+      </div>
+    </nav>
+
+    <div class="sidebar-mask" id="sidebar-mask"></div>
+
+    <main class="content">
+      <div class="page-hero">
+        <p class="kicker">Editing</p>
+        <h1>Редактирование</h1>
+        <p class="tagline">Точечные правки дерева компонентов: селекторы, кнопки, селекты, текст.</p>
+      </div>
+
+      <h2>ComponentsEditor — цепочный редактор</h2>
+      <p>
+        <code>editComponents(data)</code> принимает то же, что и парсер (сообщение, сырые
+        компоненты, билдеры…), но работает с <strong>глубокой копией</strong> — вход никогда не
+        мутируется.
+      </p>
+
+      <div class="code-block">
+        <div class="code-header"><span class="lang">ts</span><button class="copy-btn" type="button"><span aria-hidden="true">⧉</span> Копировать</button></div>
+        <pre><code class="language-ts">import { editComponents } from "discordjs-components-v2";
+
+const components = editComponents(await interaction.fetchReply())
+  .disableButtons()              // выключить все кнопки
+  .enableButtons("open")         // …кроме одной
+  .removeButtons("rules")        // кнопку rules — удалить вообще
+  .remove("pick")                // убрать любой компонент по customId
+  .remove("textDisplay", 1)      // убрать 2-й текстовый блок по kind-индексу
+  .setButtonLabel("join", "Голосовать")
+  .replaceText("100 монет", "200 монет")
+  .toJSON();
+
+await interaction.editReply({ components, flags: 32768 });</code></pre>
+      </div>
+
+      <div class="callout info">
+        <div class="callout-title">ℹ️ Авто-чистка</div>
+        <p>
+          После удалений пустые ActionRow удаляются, секция без текста или аксессуара — тоже
+          (Discord такое не принимает).
+        </p>
+      </div>
+
+      <h2>Селекторы</h2>
+      <p>Везде, где нужен поиск/удаление, используется единый селектор:</p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Селектор</th><th>Что ищет</th><th>Пример</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>string</code></td><td>точное совпадение <code>custom_id</code></td><td><code>"join"</code></td></tr>
+            <tr><td><code>number</code></td><td>точный тип компонента</td><td><code>ComponentType.Button</code></td></tr>
+            <tr><td><code>/regex/</code></td><td>по <code>custom_id</code>, label и тексту TextDisplay</td><td><code>/розыгрыш/i</code></td></tr>
+            <tr><td><code>(c) =&gt; boolean</code></td><td>свой предикат</td><td><code>(c) =&gt; c.custom_id?.startsWith("pag:")</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2>Кнопки</h2>
+      <div class="code-block">
+        <div class="code-header"><span class="lang">ts</span><button class="copy-btn" type="button"><span aria-hidden="true">⧉</span> Копировать</button></div>
+        <pre><code class="language-ts">editComponents(msg)
+  .setButtonLabel("join", "Голосовать")
+  .setButtonStyle("join", 3)                // → Danger (убирает/ставит url и custom_id корректно)
+  .setButtonEmoji("join", "👍")             // строка как в parseEmoji
+  .setButtonEmoji("join", undefined)        // убрать эмодзи
+  .setButtonUrl("docs", "https://…")        // превращает в Link-кнопку
+  .renameCustomId("join", "leave")          // переименовать везде, кидает, если ничего не нашлось
+  .disableButtons(["a", "b"])               // только перечисленные
+  .setDisabled("join", false);              // включить конкретную</code></pre>
+      </div>
+
+      <h2>Селект-меню</h2>
+      <p>
+        <code>SelectMenuMatchOptions = { type?, customIds? }</code>; <code>type</code> —
+        <code>"string" | "user" | "role" | "channel" | "mentionable"</code> (можно массив),
+        <code>customIds</code> — строка или массив.
+      </p>
+      <div class="code-block">
+        <div class="code-header"><span class="lang">ts</span><button class="copy-btn" type="button"><span aria-hidden="true">⧉</span> Копировать</button></div>
+        <pre><code class="language-ts">editComponents(msg)
+  .removeSelectMenus({ type: "string" })                    // убрать все строковые селекты
+  .removeSelectMenus({ type: ["role", "user"], customIds: "filter" })
+  .clearSelectValues({ type: "mentionable" })               // сбросить выбор (default_values / default)
+  .getSelectMenus({ type: "user" })                         // массив raw-компонентов
+  .findSelectMenu({ customIds: "pick" })                    // первый или null
+  .setSelectPlaceholder("pick", "Выбери")
+  .setSelectOptions("pick", [
+    { label: "X", value: "x", emoji: ":fire:" },
+    { label: "Y", value: "y", default: true },
+  ])
+  .setSelectMinMaxValues("pick", 1, 3)                      // undefined — убрать
+  .setSelectDisabled({ type: "role" })
+  .replaceSelectMenu({ customIds: "roles" }, { type: 2, style: 1, label: "Go", custom_id: "go" });</code></pre>
+      </div>
+
+      <h2>Текст</h2>
+      <div class="code-block">
+        <div class="code-header"><span class="lang">ts</span><button class="copy-btn" type="button"><span aria-hidden="true">⧉</span> Копировать</button></div>
+        <pre><code class="language-ts">editComponents(msg)
+  .replaceText("0 участников", "1 участник")   // string или RegExp
+  .replaceText(/\{\{__([A-Z_]+)\}\}/g, (m, key) => pages[key]); // replacer-функция тоже ок
+  .getTexts();                                 // [string] — все TextDisplay'ы подряд</code></pre>
+      </div>
+
+      <div class="callout success">
+        <div class="callout-title">💡 Замена текста + шаблоны</div>
+        <p>
+          Сентинелы вроде <code>{{__CONTENT}}</code> делают реплейс детерминированным и не зависящим
+          от содержимого. Это основа готовых модулей шаблонов и пагинации — см.
+          <a href="template.html">Шаблоны и пагинация</a> и паттерн <a href="pagination.html">Пагинация вручную</a>.
+        </p>
+      </div>
+
+      <h2>Поиск и извлечение информации</h2>
+      <div class="code-block">
+        <div class="code-header"><span class="lang">ts</span><button class="copy-btn" type="button"><span aria-hidden="true">⧉</span> Копировать</button></div>
+        <pre><code class="language-ts">builder.find("join");                     // ComponentRef | null — нода + путь + родитель
+builder.findAll(ComponentType.TextDisplay);
+builder.getTexts();                       // содержимое всех текстовых блоков
+
+findComponents(rawArray, selector);       // standalone-версия</code></pre>
+      </div>
+
+      <p>
+        Все операции доступны и как standalone-функции над сырым массивом, и как методы
+        <code>V2Builder</code> — единое ядро в <code>edit/operations</code>.
+      </p>
+
+      <div class="callout warning">
+        <div class="callout-title">⚠️ Флаги при ручном editReply</div>
+        <p>
+          Передавайте <code>flags</code> из полученного сообщения, либо используйте
+          <code>builder.send(ctx)</code>, который сам ставит <code>IS_COMPONENTS_V2</code>.
+        </p>
+      </div>
+
+      <div class="pagination-nav">
+        <a class="page-link" href="parsing.html"><small>Назад</small>← Разбор без кэша</a>
+        <a class="page-link next" href="layout.html"><small>Далее</small>Секции и layout →</a>
+      </div>
+    </main>
+  </div>
+
+</body>
+</html>

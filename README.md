@@ -102,7 +102,7 @@ const components = editComponents(await interaction.fetchReply())
   .enableButtons("open")         // …кроме одной
   .removeButtons("rules")        // кнопку rules — удалить вообще
   .remove("pick")                // убрать любой компонент по customId
-  .keepOnly(/розыгрыш/i)         // оставить только совпавшее (+ предков)
+  .remove("textDisplay", 1)      // убрать 2-й текстовый блок по kind-индексу
   .setButtonLabel("join", "Голосовать")
   .replaceText("100 монет", "200 монет")
   .toJSON();
@@ -133,7 +133,7 @@ await interaction.editReply({ components, flags: 32768 });
 ```ts
 editComponents(await interaction.fetchReply())
   .removeSelectMenus({ type: "string" })          // убрать все строковые селекты
-  .removeSelectMenu({ type: ["role", "user"], customIds: "filter" }) // alias removeSelectMenus
+  .removeSelectMenus({ type: ["role", "user"], customIds: "filter" })
   .clearSelectValues({ type: "mentionable" })     // сбросить выбранное (default_values / default)
   .getSelectMenus({ type: "user" })               // найти селекты (массив с raw-компонентами)
   .findSelectMenu({ customIds: "pick" })          // первый подходящий или null
@@ -190,7 +190,7 @@ findComponents(rawArray, selector); // standalone-версия
 | `.setId(n)` | числовой id контейнера |
 | `.clear()` / `.getAttachments()` | сброс состояния / файлы |
 
-Методы редактирования доступны прямо на билдере: `disableButtons`, `enableButtons`, `setDisabled`, `setButtonLabel`, `setButtonStyle`, `setButtonEmoji`, `setButtonUrl`, `remove`, `removeButtons`, `removeSelectMenus`/`removeSelectMenu`, `clearSelectValues`, `setSelectPlaceholder`, `setSelectOptions`, `setSelectMinMaxValues`, `setSelectDisabled`, `getSelectMenus`, `findSelectMenu`, `replaceSelectMenu`, `renameCustomId`, `keepOnly`, `replaceText`, `find`, `findAll`, `getTexts`.
+Методы редактирования доступны прямо на билдере: `disableButtons`, `enableButtons`, `setDisabled`, `setButtonLabel`, `setButtonStyle`, `setButtonEmoji`, `setButtonUrl`, `remove`, `removeButtons`, `removeSelectMenus`, `clearSelectValues`, `setSelectPlaceholder`, `setSelectOptions`, `setSelectMinMaxValues`, `setSelectDisabled`, `getSelectMenus`, `findSelectMenu`, `replaceSelectMenu`, `renameCustomId`, `replaceText`, `find`, `findAll`, `getTexts`.
 
 ## 📝 Модальные окна (`V2ModalBuilder`)
 
@@ -330,50 +330,46 @@ await newsV2Modal.show(interaction); // eqv. interaction.showModal(newsV2Modal.b
 
 ## 🧩 Управление секциями и layout-компонентами
 
-`V2Builder` и `ComponentsEditor` позволяют гибко управлять компонентами внутри контейнера по их индексу: секциями (`Section`), разделителями (`Separator`), текстовыми блоками (`TextDisplay`), галереями (`MediaGallery`) и рядами (`ActionRow`). Каждый тип индексируется отдельно (считаются только компоненты своего типа), можно удалить, заменить или переставить любой из них.
+`V2Builder` и `ComponentsEditor` позволяют гибко управлять компонентами внутри контейнера по их индексу: секциями (`Section`), разделителями (`Separator`), текстовыми блоками (`TextDisplay`), галереями (`MediaGallery`) и рядами (`ActionRow`). Каждый тип индексируется отдельно (считаются только компоненты своего типа) — общий механизм для всех видов называется «kind» (`"section" | "separator" | "textDisplay" | "actionRow" | "mediaGallery"`), можно удалить, заменить или переставить любой из них.
 
 | Метод | Описание |
 |---|---|
-| `.getSections()` · `.getSection(i)` | список / одна секция: `{ index, component, containerIndex }` |
-| `.removeSection(i)` · `.replaceSection(i, r)` · `.moveSection(from, to)` | удалить / заменить / переместить секцию |
-| `.getSeparators()` · `.getSeparator(i)` | список / один разделитель |
-| `.removeSeparator(i)` · `.replaceSeparator(i, r)` · `.moveSeparator(from, to)` | удалить / заменить / переместить разделитель |
-| `.getTextDisplays()` · `.getTextDisplay(i)` | список / один текстовый блок |
-| `.removeTextDisplay(i)` · `.replaceTextDisplay(i, r)` · `.moveTextDisplay(from, to)` | удалить / заменить / переместить текстовый блок |
-| `.getMediaGalleries()` · `.getMediaGallery(i)` | список / одна галерея |
-| `.removeMediaGallery(i)` · `.replaceMediaGallery(i, r)` · `.moveMediaGallery(from, to)` | удалить / заменить / переместить галерею |
-| `.getActionRows()` · `.getActionRow(i)` | список / один ряд |
-| `.removeActionRow(i)` · `.replaceActionRow(i, r)` · `.moveActionRow(from, to)` | удалить / заменить / переместить ряд |
+| `.all(kind)` · `.get(kind, i)` | список / один `{ index, component, containerIndex }` |
+| `.remove(kind, i)` · `.replace({ kind, index }, r)` | удалить / заменить по kind-индексу |
+| `.move(kind, from, to)` | переместить (move также в `lib/advanced`) |
+| `.sections` / `.separators` / `.textDisplays` / `.actionRows` / `.mediaGalleries` | namespace: `.all()`, `.get(i)`, `.set(i, v)`, `.remove(i)`, `.move(a, b)` |
 
-Все *remove/replace/move* методы возвращают `this` для чейнинга.
+Все *remove/replace/move/set* методы возвращают `this` для чейнинга. `set` для `textDisplay` принимает строку: `builder.textDisplays.set(2, "новый текст")`.
 
 ```ts
 const builder = V2Builder.parse(message);
 
 // Сколько секций в компоненте?
-const sections = builder.getSections(); // [{ index: 0, component, containerIndex: 2 }, ...]
+const sections = builder.all("section"); // [{ index: 0, component, containerIndex: 2 }, ...]
 
 // Удалить второй разделитель
-builder.removeSeparator(1);
+builder.remove("separator", 1);
+// то же самое:
+builder.separators.remove(1);
 
 // Убрать все разделители между секциями
-while (builder.getSeparators().length) builder.removeSeparator(0);
+while (builder.all("separator").length) builder.remove("separator", 0);
 
 // Удалить один текстовый блок
-builder.removeTextDisplay(0);
+builder.remove("textDisplay", 0);
 
 // Заменить первую секцию целиком
-builder.replaceSection(0, {
+builder.replace({ kind: "section", index: 0 }, {
   type: ComponentType.Section,
   components: [{ type: ComponentType.TextDisplay, content: "**Новый заголовок**\nНовый контент" }],
   accessory: { type: ComponentType.Thumbnail, media: { url: "https://example.com/img.png" } },
 });
 
 // Переместить последнюю секцию наверх
-builder.moveSection(2, 0);
+builder.move("section", 2, 0);
 
 // Чейнинг: убрать одну секцию и переставить оставшиеся
-builder.removeSection(1).moveSection(0, 1);
+builder.remove("section", 1).move("section", 0, 1);
 
 await builder.send(interaction);
 ```
@@ -382,19 +378,60 @@ await builder.send(interaction);
 
 ```ts
 editComponents(message)
-  .removeSeparator(1)
-  .removeTextDisplay(0)
-  .getSections();
+  .remove("separator", 1)
+  .remove("textDisplay", 0)
+  .all("section");
 ```
 
-А также как standalone-функции над сырым массивом детей контейнера (`getSections`, `getSection`, `removeSection`, `replaceSection`, `moveSection`, `getSeparators`, `getSeparator`, `removeSeparator`, `replaceSeparator`, `moveSeparator`, …) — автоматом раскрывают корневой контейнер:
+А также как standalone-функции над сырым массивом детей контейнера (`getAllByKind`, `getByKind`, `removeByKind`, `replaceByKind` из корня; `moveByKind` — из `lib/advanced`) — автоматом раскрывают корневой контейнер:
 
 ```ts
-import { getSeparators, removeSeparator, moveSeparator } from "discordjs-components-v2";
+import { getAllByKind, removeByKind } from "discordjs-components-v2";
+import { moveByKind } from "discordjs-components-v2/lib/advanced";
 
-const seps = getSeparators(container.components); // [SeparatorRef]
-removeSeparator(container.components, 1);
-moveSeparator(container.components, 2, 0);
+const seps = getAllByKind(container.components, "separator"); // [{ index, component, containerIndex }]
+removeByKind(container.components, "separator", 1);
+moveByKind(container.components, "separator", 2, 0);
+```
+
+Редкие цельнодеревые операции вынесены в `discordjs-components-v2/lib/advanced`:
+
+```ts
+import { keepOnly } from "discordjs-components-v2/lib/advanced";
+
+keepOnly(container.components, /розыгрыш/i); // оставить только совпавшее (+ предков), in place
+```
+
+## 🏗️ Шаблоны и пагинация (`V2Template` / `V2Paginator`)
+
+`V2Template` собирает каркас сообщения один раз и рендерит его с любыми значениями — без кэшей. Слоты регистрируются с сентинелом (авто: `slot("x")` → `{{x}}`), `render()` подставляет значения в каждый TextDisplay и в обычный `content`:
+
+```ts
+import { V2Builder } from "discordjs-components-v2";
+import { V2Template } from "discordjs-components-v2/lib/template";
+
+const tpl = new V2Template(new V2Builder().text("Привет, {{name}}!"));
+tpl.slot("name"); // сентинел {{name}}
+
+const payload = tpl.render({ name: "Мир" }).build(); // "Привет, Мир!"
+```
+
+`V2Paginator` — бесстейтовая пагинация поверх шаблона: страницы это slot-мапы (или готовые шаблоны), вниз добавляется ряд кнопок `pag:0`/`pag:1`/… (текущая выделена и задизаблена). Текущая страница всегда читается из самого сообщения, поэтому состояние не хранится:
+
+```ts
+import { V2Builder } from "discordjs-components-v2";
+import { V2Template } from "discordjs-components-v2/lib/template";
+import { V2Paginator } from "discordjs-components-v2/lib/pagination";
+
+const tpl = new V2Template(new V2Builder().text("{{content}}")).slot("content");
+const pages = new V2Paginator({
+  template: tpl,
+  pages: [{ content: "Страница 1" }, { content: "Страница 2" }],
+  pageButton: "pag",
+});
+
+// в обработчике кнопок pag:N / pag:prev / pag:next:
+if (await pages.jump(ctx)) return; // сам делает update()/editReply()/reply()
 ```
 
 ## 🆔 Хранение состояния в `customId` (`CustomIdBuilder`)

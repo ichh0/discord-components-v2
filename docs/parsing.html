@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="dark light" />
+  <title>Разбор без кэша — discordjs-components-v2</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%232f6bff'/%3E%3Cstop offset='1' stop-color='%237fb0ff'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='100' height='100' rx='24' fill='url(%23g)'/%3E%3Ctext x='50' y='70' font-family='Arial' font-size='52' font-weight='900' fill='white' text-anchor='middle'%3EC2%3C/text%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+  <script defer src="js/prism/prism-core.min.js"></script>
+  <script defer src="js/prism/prism-clike.min.js"></script>
+  <script defer src="js/prism/prism-javascript.min.js"></script>
+  <script defer src="js/prism/prism-typescript.min.js"></script>
+  <script defer src="js/prism/prism-bash.min.js"></script>
+  <script defer src="js/prism/prism-json.min.js"></script>
+  <script defer src="js/prism/prism-markup.min.js"></script>
+  <script defer src="js/main.js"></script>
+</head>
+<body>
+
+  <nav class="navbar">
+    <a class="brand" href="index.html"><span class="brand-logo">C2</span>discordjs-components-v2</a>
+    <div class="nav-links">
+      <a href="index.html">Документация</a>
+      <a href="pagination.html">Пагинация</a>
+    </div>
+    <button class="icon-btn hamburger" id="sidebar-toggle" type="button" aria-label="Меню">☰</button>
+    <div class="nav-right">
+      <button class="icon-btn" id="theme-toggle" type="button" aria-label="Сменить тему" title="Сменить тему">
+        <span class="icon-dark" aria-hidden="true">🌙</span>
+        <span class="icon-light" aria-hidden="true">☀️</span>
+      </button>
+      <span class="nav-version">v2.2.0</span>
+    </div>
+  </nav>
+
+  <div class="layout">
+    <nav class="sidebar">
+      <p class="sidebar-title">Начало</p>
+      <div class="sidebar-nav">
+        <a href="index.html"><span class="nav-ico" aria-hidden="true">🏠</span>Введение</a>
+        <a href="getting-started.html"><span class="nav-ico" aria-hidden="true">🚀</span>Установка и быстрый старт</a>
+      </div>
+      <p class="sidebar-title">Библиотека</p>
+      <div class="sidebar-nav">
+        <a href="builder.html"><span class="nav-ico" aria-hidden="true">🧱</span>V2Builder</a>
+        <a class="active" href="parsing.html"><span class="nav-ico" aria-hidden="true">♻️</span>Разбор без кэша</a>
+        <a href="editing.html"><span class="nav-ico" aria-hidden="true">✂️</span>Редактирование</a>
+        <a href="layout.html"><span class="nav-ico" aria-hidden="true">🗂️</span>Секции и layout</a>
+        <a href="template.html"><span class="nav-ico" aria-hidden="true">🧩</span>Шаблоны и пагинация</a>
+        <a href="modal.html"><span class="nav-ico" aria-hidden="true">📝</span>Модальные окна</a>
+        <a href="customid.html"><span class="nav-ico" aria-hidden="true">🆔</span>customId и состояние</a>
+        <a href="validation.html"><span class="nav-ico" aria-hidden="true">🛡️</span>Валидация</a>
+      </div>
+      <p class="sidebar-title">Паттерны</p>
+      <div class="sidebar-nav">
+        <a href="pagination.html"><span class="nav-ico" aria-hidden="true">📄</span>Пагинация вручную</a>
+      </div>
+    </nav>
+
+    <div class="sidebar-mask" id="sidebar-mask"></div>
+
+    <main class="content">
+      <div class="page-hero">
+        <p class="kicker">Parser</p>
+        <h1>Разбор без кэша</h1>
+        <p class="tagline">Главная фича: `fetch → parse → edit → send` без хранения состояния.</p>
+      </div>
+
+      <p>
+        Discord возвращает полное дерево компонентов в <code>message.components</code>.
+        Библиотека умеет превратить его обратно в живой <code>V2Builder</code> — поэтому состояние
+        сообщения можно <strong>никогда не хранить у себя</strong>:
+      </p>
+
+      <div class="code-block">
+        <div class="code-header"><span class="lang">ts</span><button class="copy-btn" type="button"><span aria-hidden="true">⧉</span> Копировать</button></div>
+        <pre><code class="language-ts">// где-то потом, хоть через неделю:
+const message = await interaction.fetchReply();
+
+const builder = parseComponents(message);  // raw JSON → билдер
+
+builder
+  .replaceText("0 участников", "1 участник")
+  .setButtonLabel("join", "Розыгрыш закрыт")
+  .disableButtons();                       // выключить все, включая аксессуары секций
+
+await builder.send(interaction);           // editReply внутри</code></pre>
+      </div>
+
+      <p><code>parseComponents(x)</code> — это то же самое, что <code>V2Builder.parse(x)</code>.</p>
+
+      <h2>Что можно скормить парсеру</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Вход</th><th>Пример</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Массив сырых компонентов</td><td><code>[...message.components]</code></td></tr>
+            <tr><td>Message-like объект</td><td><code>{ components: [...], content }</code> — fetched Message тоже ок</td></tr>
+            <tr><td>Одиночный компонент</td><td><code>{ type: 17, components: [...] }</code></td></tr>
+            <tr><td>Что угодно с <code>.toJSON()</code></td><td>discord.js билдеры и инстансы компонентов</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>
+        Сообщение распознаётся не по «наличию type», а по <strong>не-компонентному</strong> типу
+        (0/19/20/…): это позволяет принимать и объект сообщения, и массив из одного сообщения
+        (например, <code>[await ctx.fetchReply()]</code>). Достаётся и plain-контент.
+      </p>
+
+      <h2>Поглощение root-контейнера</h2>
+      <p>
+        Если корневой компонент один и это контейнер — он поглощается целиком (цвет, spoiler,
+        дети). Иначе всё оборачивается в неявный контейнер, чтобы fluent-API продолжало работать.
+      </p>
+
+      <div class="code-block">
+        <div class="code-header"><span class="lang">ts</span><button class="copy-btn" type="button"><span aria-hidden="true">⧉</span> Копировать</button></div>
+        <pre><code class="language-ts">const builder = new V2Builder(message.components);  // тоже работает
+const builder2 = parseComponents(ctx.message.components[0].components); // дети контейнера</code></pre>
+      </div>
+
+      <h2>Откуда появляется билдер при нажатии кнопки</h2>
+      <p>Типичный полный цикл в discordx:</p>
+      <div class="code-block">
+        <div class="code-header"><span class="lang">ts</span><button class="copy-btn" type="button"><span aria-hidden="true">⧉</span> Копировать</button></div>
+        <pre><code class="language-ts">import { Discord, Button } from "discordx";
+import type { ButtonInteraction } from "discord.js";
+import { V2Builder } from "discordjs-components-v2";
+
+@Discord()
+class News {
+  @Button({ id: "news:like" })
+  async like(interaction: ButtonInteraction) {
+    const builder = V2Builder.parse(interaction.message);
+
+    const btn = builder.find("news:like");
+    if (btn?.component) (btn.component as { disabled?: boolean }).disabled = true;
+
+    await builder.send(interaction); // update
+  }
+}</code></pre>
+      </div>
+
+      <div class="callout warning">
+        <div class="callout-title">⚠️ Флаги при редактировании</div>
+        <p>
+          Когда редактируете CV2-сообщение через discord.js напрямую, сохраняйте флаг
+          <code>IS_COMPONENTS_V2</code> (32 768), иначе Discord его отвергнет
+          (<code>UNION_TYPE_CHOICES</code>). <code>builder.send()</code> делает это сам.
+        </p>
+      </div>
+
+      <p>Дальше — как именно точечно править разобранное дерево:</p>
+
+      <div class="pagination-nav">
+        <a class="page-link" href="builder.html"><small>Назад</small>← V2Builder</a>
+        <a class="page-link next" href="editing.html"><small>Далее</small>Редактирование →</a>
+      </div>
+    </main>
+  </div>
+
+</body>
+</html>

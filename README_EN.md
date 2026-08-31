@@ -95,10 +95,10 @@ import { editComponents } from "discordjs-components-v2";
 
 const components = editComponents(await interaction.fetchReply())
   .disableButtons()              // disable all buttons
-  .enableButtons("open")         // …except one
-  .removeButtons("rules")        // remove the rules button entirely
+  .enableButtons("open")         // …except this one
+  .removeButtons("rules")        // drop the "rules" button entirely
   .remove("pick")                // remove any component by customId
-  .keepOnly(/giveaway/i)         // keep only matches (+ their ancestors)
+  .remove("textDisplay", 1)      // remove the 2nd text block by kind index
   .setButtonLabel("join", "Vote")
   .replaceText("100 coins", "200 coins")
   .toJSON();
@@ -129,7 +129,7 @@ Automatic cleanup after removals: empty ActionRows are pruned; a Section without
 ```ts
 editComponents(await interaction.fetchReply())
   .removeSelectMenus({ type: "string" })          // drop every string select
-  .removeSelectMenu({ type: ["role", "user"], customIds: "filter" }) // alias of removeSelectMenus
+  .removeSelectMenus({ type: ["role", "user"], customIds: "filter" })
   .clearSelectValues({ type: "mentionable" })     // reset the selection (default_values / default)
   .getSelectMenus({ type: "user" })               // find selects (array of raw components)
   .findSelectMenu({ customIds: "pick" })          // first match or null
@@ -186,7 +186,7 @@ findComponents(rawArray, selector); // standalone version
 | `.setId(n)` | numeric container id |
 | `.clear()` / `.getAttachments()` | reset state / files |
 
-Editing methods are available right on the builder: `disableButtons`, `enableButtons`, `setDisabled`, `setButtonLabel`, `setButtonStyle`, `setButtonEmoji`, `setButtonUrl`, `remove`, `removeButtons`, `removeSelectMenus`/`removeSelectMenu`, `clearSelectValues`, `setSelectPlaceholder`, `setSelectOptions`, `setSelectMinMaxValues`, `setSelectDisabled`, `getSelectMenus`, `findSelectMenu`, `replaceSelectMenu`, `renameCustomId`, `keepOnly`, `replaceText`, `find`, `findAll`, `getTexts`.
+Editing methods are available right on the builder: `disableButtons`, `enableButtons`, `setDisabled`, `setButtonLabel`, `setButtonStyle`, `setButtonEmoji`, `setButtonUrl`, `remove`, `removeButtons`, `removeSelectMenus`, `clearSelectValues`, `setSelectPlaceholder`, `setSelectOptions`, `setSelectMinMaxValues`, `setSelectDisabled`, `getSelectMenus`, `findSelectMenu`, `replaceSelectMenu`, `renameCustomId`, `replaceText`, `find`, `findAll`, `getTexts`.
 
 ## 📝 Modals (`V2ModalBuilder`)
 
@@ -324,50 +324,46 @@ await newsV2Modal.show(interaction); // eqv. interaction.showModal(newsV2Modal.b
 
 ## 🧩 Section & layout-component management
 
-`V2Builder` and `ComponentsEditor` let you flexibly manage components inside the container by their index: sections (`Section`), separators (`Separator`), text blocks (`TextDisplay`), galleries (`MediaGallery`) and action rows (`ActionRow`). Each type is indexed independently (only siblings of the same type are counted), and any of them can be removed, replaced or reordered.
+`V2Builder` and `ComponentsEditor` let you flexibly manage components inside the container by their index: sections (`Section`), separators (`Separator`), text blocks (`TextDisplay`), galleries (`MediaGallery`) and action rows (`ActionRow`). Each type is indexed independently (only siblings of the same type are counted) — the shared mechanism is called a "kind" (`"section" | "separator" | "textDisplay" | "actionRow" | "mediaGallery"`), and any of them can be removed, replaced or reordered.
 
 | Method | Purpose |
 |---|---|
-| `.getSections()` · `.getSection(i)` | list / one section: `{ index, component, containerIndex }` |
-| `.removeSection(i)` · `.replaceSection(i, r)` · `.moveSection(from, to)` | remove / replace / move a section |
-| `.getSeparators()` · `.getSeparator(i)` | list / one separator |
-| `.removeSeparator(i)` · `.replaceSeparator(i, r)` · `.moveSeparator(from, to)` | remove / replace / move a separator |
-| `.getTextDisplays()` · `.getTextDisplay(i)` | list / one text block |
-| `.removeTextDisplay(i)` · `.replaceTextDisplay(i, r)` · `.moveTextDisplay(from, to)` | remove / replace / move a text block |
-| `.getMediaGalleries()` · `.getMediaGallery(i)` | list / one gallery |
-| `.removeMediaGallery(i)` · `.replaceMediaGallery(i, r)` · `.moveMediaGallery(from, to)` | remove / replace / move a gallery |
-| `.getActionRows()` · `.getActionRow(i)` | list / one action row |
-| `.removeActionRow(i)` · `.replaceActionRow(i, r)` · `.moveActionRow(from, to)` | remove / replace / move an action row |
+| `.all(kind)` · `.get(kind, i)` | list / one `{ index, component, containerIndex }` |
+| `.remove(kind, i)` · `.replace({ kind, index }, r)` | remove / replace by kind index |
+| `.move(kind, from, to)` | reorder (move also lives in `lib/advanced`) |
+| `.sections` / `.separators` / `.textDisplays` / `.actionRows` / `.mediaGalleries` | namespace: `.all()`, `.get(i)`, `.set(i, v)`, `.remove(i)`, `.move(a, b)` |
 
-All *remove / replace / move* methods return `this` for chaining.
+All *remove / replace / move / set* methods return `this` for chaining. `set` for `textDisplay` accepts a string: `builder.textDisplays.set(2, "new text")`.
 
 ```ts
 const builder = V2Builder.parse(message);
 
 // How many sections are there?
-const sections = builder.getSections(); // [{ index: 0, component, containerIndex: 2 }, ...]
+const sections = builder.all("section"); // [{ index: 0, component, containerIndex: 2 }, ...]
 
 // Remove the second separator
-builder.removeSeparator(1);
+builder.remove("separator", 1);
+// same thing:
+builder.separators.remove(1);
 
 // Drop every separator between sections
-while (builder.getSeparators().length) builder.removeSeparator(0);
+while (builder.all("separator").length) builder.remove("separator", 0);
 
 // Remove one text block
-builder.removeTextDisplay(0);
+builder.remove("textDisplay", 0);
 
 // Replace the first section entirely
-builder.replaceSection(0, {
+builder.replace({ kind: "section", index: 0 }, {
   type: ComponentType.Section,
   components: [{ type: ComponentType.TextDisplay, content: "**New title**\nNew content" }],
   accessory: { type: ComponentType.Thumbnail, media: { url: "https://example.com/img.png" } },
 });
 
 // Move the last section to the top
-builder.moveSection(2, 0);
+builder.move("section", 2, 0);
 
 // Chaining: drop one section and reorder the rest
-builder.removeSection(1).moveSection(0, 1);
+builder.remove("section", 1).move("section", 0, 1);
 
 await builder.send(interaction);
 ```
@@ -376,19 +372,60 @@ The same operations are available through `ComponentsEditor`:
 
 ```ts
 editComponents(message)
-  .removeSeparator(1)
-  .removeTextDisplay(0)
-  .getSections();
+  .remove("separator", 1)
+  .remove("textDisplay", 0)
+  .all("section");
 ```
 
-And as standalone functions over a raw container-children array (`getSections`, `getSection`, `removeSection`, `replaceSection`, `moveSection`, `getSeparators`, `getSeparator`, `removeSeparator`, `replaceSeparator`, `moveSeparator`, …) — these auto-expand a root container:
+And as standalone functions over a raw container-children array (`getAllByKind`, `getByKind`, `removeByKind`, `replaceByKind` from the root; `moveByKind` from `lib/advanced`) — these auto-expand a root container:
 
 ```ts
-import { getSeparators, removeSeparator, moveSeparator } from "discordjs-components-v2";
+import { getAllByKind, removeByKind } from "discordjs-components-v2";
+import { moveByKind } from "discordjs-components-v2/lib/advanced";
 
-const seps = getSeparators(container.components); // [SeparatorRef]
-removeSeparator(container.components, 1);
-moveSeparator(container.components, 2, 0);
+const seps = getAllByKind(container.components, "separator"); // [{ index, component, containerIndex }]
+removeByKind(container.components, "separator", 1);
+moveByKind(container.components, "separator", 2, 0);
+```
+
+Rare whole-tree operations live in `discordjs-components-v2/lib/advanced`:
+
+```ts
+import { keepOnly } from "discordjs-components-v2/lib/advanced";
+
+keepOnly(container.components, /giveaway/i); // keep only matches (+ ancestors), in place
+```
+
+## 🏗️ Templates & pagination (`V2Template` / `V2Paginator`)
+
+`V2Template` builds a message skeleton once and renders it with any values — no caches. Slots are registered with a sentinel (auto: `slot("x")` → `{{x}}`); `render()` substitutes values into every TextDisplay and the plain `content`:
+
+```ts
+import { V2Builder } from "discordjs-components-v2";
+import { V2Template } from "discordjs-components-v2/lib/template";
+
+const tpl = new V2Template(new V2Builder().text("Hi, {{name}}!"));
+tpl.slot("name"); // sentinel {{name}}
+
+const payload = tpl.render({ name: "World" }).build(); // "Hi, World!"
+```
+
+`V2Paginator` — stateless pagination on top of templates: pages are slot maps (or ready templates), a row of `pag:0`/`pag:1`/… buttons is appended (the current one highlighted and disabled). The current page is always read from the message itself, so no state is kept:
+
+```ts
+import { V2Builder } from "discordjs-components-v2";
+import { V2Template } from "discordjs-components-v2/lib/template";
+import { V2Paginator } from "discordjs-components-v2/lib/pagination";
+
+const tpl = new V2Template(new V2Builder().text("{{content}}")).slot("content");
+const pages = new V2Paginator({
+  template: tpl,
+  pages: [{ content: "Page 1" }, { content: "Page 2" }],
+  pageButton: "pag",
+});
+
+// in the pag:N / pag:prev / pag:next button handler:
+if (await pages.jump(ctx)) return; // sends update()/editReply()/reply() itself
 ```
 
 ## 🆔 State in `customId` (`CustomIdBuilder`)

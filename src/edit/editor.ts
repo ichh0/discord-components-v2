@@ -1,64 +1,50 @@
 import type { RawComponent } from "../core/constants";
-import { ComponentType } from "../core/constants";
 import { normalizeComponents } from "../core/normalize";
 import type { ComponentSelector } from "../core/selector";
 import { findComponent, findComponents, walkComponents, type ComponentRef } from "../core/walk";
 import {
+  clearSelectValues,
   disableButtons,
   enableButtons,
-  getActionRow,
-  getActionRows,
-  getMediaGallery,
-  getMediaGalleries,
-  getSection as opGetSection,
-  getSections as opGetSections,
-  getSeparator,
-  getSeparators,
-  getTextContents,
-  getTextDisplay,
-  getTextDisplays,
-  keepOnly,
-  matchesButtonIds,
-  moveActionRow,
-  moveMediaGallery,
-  moveSection as opMoveSection,
-  moveSeparator,
-  moveTextDisplay,
-  removeActionRow,
-  removeComponents,
-  removeMediaGallery,
-  removeSelectMenus,
-  removeSection as opRemoveSection,
-  removeSeparator,
-  removeTextDisplay,
-  replaceActionRow,
-  replaceMediaGallery,
-  replaceSection as opReplaceSection,
-  replaceSeparator,
-  replaceText,
-  replaceTextDisplay,
-  setButtonLabel,
-  setDisabled,
-  clearSelectValues,
   findSelectMenu,
   getSelectMenus,
+  getTextContents,
+  matchesButtonIds,
+  removeComponents,
+  removeSelectMenus,
   renameCustomId,
   replaceSelectMenu,
+  replaceText,
   setButtonEmoji,
+  setButtonLabel,
   setButtonStyle,
   setButtonUrl,
+  setDisabled,
   setSelectDisabled,
   setSelectMinMaxValues,
   setSelectOptions,
   setSelectPlaceholder,
-  type ActionRowRef,
-  type MediaGalleryRef,
-  type SectionRef,
   type SelectMenuMatchOptions,
   type SelectOptionInput,
-  type SeparatorRef,
-  type TextDisplayRef,
 } from "./operations";
+import {
+  coerceKindValue,
+  getAllByKind,
+  getByKind,
+  isComponentKind,
+  kindGroup as kindGroupFactory,
+  moveByKind,
+  removeByKind,
+  replaceByKind,
+  type ComponentKind,
+  type IndexedChildRef,
+  type KindTarget,
+} from "./kinds";
+
+function kindTarget(kindOrTarget: ComponentKind | KindTarget, index?: number): KindTarget {
+  if (typeof kindOrTarget === "string") return { kind: kindOrTarget, index: index as number };
+  return kindOrTarget;
+}
 
 /**
  * Chainable editor over an array of raw components.
@@ -75,6 +61,10 @@ import {
  *
  * await interaction.editReply({ components: payload, flags });
  * ```
+ *
+ * Indexed access to container children is kind-based: either the generic
+ * methods (`remove({ kind: "section", index: 1 })`) or the per-kind
+ * namespaces (`editor.sections.remove(1)`, `editor.textDisplays.set(2, "hi")`).
  */
 export class ComponentsEditor {
   private roots: RawComponent[];
@@ -126,17 +116,37 @@ export class ComponentsEditor {
   }
 
   /**
-   * Removes every matching component. Removing a section accessory removes the
-   * whole Section; empty action rows are pruned automatically.
+   * Removes matching components. Accepts:
+   * - a selector (`"pick"`, `ComponentType`, regex, predicate),
+   * - a kind target (`remove({ kind: "section", index: 1 })`),
+   * - a kind + index pair (`remove("section", 1)`).
+   *
+   * Removing a section accessory removes the whole Section; empty action rows
+   * are pruned automatically.
    */
-  remove(selector: ComponentSelector): this {
-    removeComponents(this.roots, selector);
-    return this;
-  }
-
-  /** Removes everything that does not match (matching subtrees are kept). */
-  keepOnly(selector: ComponentSelector): this {
-    keepOnly(this.roots, selector);
+  remove(target: KindTarget): this;
+  remove(kind: ComponentKind, index: number): this;
+  remove(selector: ComponentSelector): this;
+  remove(
+    kindOrTargetOrSelector: ComponentKind | KindTarget | ComponentSelector,
+    maybeIndex?: number,
+  ): this {
+    const arg = kindOrTargetOrSelector;
+    if (typeof arg === "string" && isComponentKind(arg) && typeof maybeIndex === "number") {
+      removeByKind(this.roots, arg, maybeIndex);
+      return this;
+    }
+    if (
+      arg !== null &&
+      typeof arg === "object" &&
+      "kind" in arg &&
+      "index" in arg &&
+      isComponentKind((arg as KindTarget).kind)
+    ) {
+      removeByKind(this.roots, (arg as KindTarget).kind, (arg as KindTarget).index);
+      return this;
+    }
+    removeComponents(this.roots, arg as ComponentSelector);
     return this;
   }
 
@@ -150,11 +160,6 @@ export class ComponentsEditor {
   removeSelectMenus(options?: SelectMenuMatchOptions): this {
     removeSelectMenus(this.roots, options);
     return this;
-  }
-
-  /** Alias for {@link removeSelectMenus}. */
-  removeSelectMenu(options?: SelectMenuMatchOptions): this {
-    return this.removeSelectMenus(options);
   }
 
   /**
@@ -230,6 +235,92 @@ export class ComponentsEditor {
     return this;
   }
 
+  // ------------------------------------------------------------------
+  // Kind-indexed management
+  // ------------------------------------------------------------------
+
+  /** Returns every container child of the given kind (with their indices). */
+  all(kind: ComponentKind): IndexedChildRef[] {
+    return getAllByKind(this.roots, kind);
+  }
+
+  /** Returns one container child of the given kind, or null if not found. */
+  get(target: KindTarget): IndexedChildRef | null;
+  get(kind: ComponentKind, index: number): IndexedChildRef | null;
+  get(kindOrTarget: ComponentKind | KindTarget, index?: number): IndexedChildRef | null {
+    const t = kindTarget(kindOrTarget, index);
+    return getByKind(this.roots, t.kind, t.index);
+  }
+
+  /**
+   * Replaces a container child in place. Accepts a kind target + value
+   * (`replace({ kind: "section", index: 1 }, node)`) or a kind + index + value
+   * (`replace("textDisplay", 0, "hello")`). For `textDisplay` the value may
+   * be a plain content string.
+   */
+  set(target: KindTarget, value: RawComponent | string): this;
+  set(kind: ComponentKind, index: number, value: RawComponent | string): this;
+  set(
+    kindOrTarget: ComponentKind | KindTarget,
+    indexOrValue: number | RawComponent | string,
+    maybeValue?: RawComponent | string,
+  ): this {
+    if (typeof kindOrTarget === "string") {
+      replaceByKind(this.roots, kindOrTarget, indexOrValue as number, coerceKindValue(kindOrTarget, maybeValue as RawComponent | string));
+    } else {
+      const { kind, index } = kindOrTarget;
+      replaceByKind(this.roots, kind, index, coerceKindValue(kind, indexOrValue as RawComponent | string));
+    }
+    return this;
+  }
+
+  /** Alias for {@link set}: replaces a container child in place with a raw component. */
+  replace(target: KindTarget, node: RawComponent): this;
+  replace(kind: ComponentKind, index: number, node: RawComponent): this;
+  replace(
+    kindOrTarget: ComponentKind | KindTarget,
+    indexOrNode: number | RawComponent,
+    maybeNode?: RawComponent,
+  ): this {
+    if (typeof kindOrTarget === "string") {
+      replaceByKind(this.roots, kindOrTarget, indexOrNode as number, maybeNode as RawComponent);
+    } else {
+      const { kind, index } = kindOrTarget;
+      replaceByKind(this.roots, kind, index, indexOrNode as RawComponent);
+    }
+    return this;
+  }
+
+  /** Moves a container child from one kind-index to another (rare — see `lib/advanced`). */
+  move(target: KindTarget, to: number): this;
+  move(kind: ComponentKind, from: number, to: number): this;
+  move(
+    kindOrTarget: ComponentKind | KindTarget,
+    fromOrTo: number,
+    maybeTo?: number,
+  ): this {
+    if (typeof kindOrTarget === "string") {
+      moveByKind(this.roots, kindOrTarget, fromOrTo, maybeTo as number);
+    } else {
+      const { kind, index } = kindOrTarget;
+      moveByKind(this.roots, kind, index, fromOrTo);
+    }
+    return this;
+  }
+
+  /** Namespaced section access (`editor.sections.remove(1)`). */
+  sections = kindGroupFactory<this>(this, () => this.roots, "section");
+  /** Namespaced separator access (`editor.separators.all()`). */
+  separators = kindGroupFactory<this>(this, () => this.roots, "separator");
+  /** Namespaced text access (`editor.textDisplays.set(2, "hello")`). */
+  textDisplays = kindGroupFactory<this>(this, () => this.roots, "textDisplay");
+  /** Namespaced action-row access. */
+  actionRows = kindGroupFactory<this>(this, () => this.roots, "actionRow");
+  /** Namespaced media-gallery access. */
+  mediaGalleries = kindGroupFactory<this>(this, () => this.roots, "mediaGallery");
+
+  // ------------------------------------------------------------------
+
   /** First component matching the selector. */
   find(selector: ComponentSelector): ComponentRef | null {
     return findComponent(this.roots, selector);
@@ -243,166 +334,6 @@ export class ComponentsEditor {
   /** All TextDisplay contents. */
   getTexts(): string[] {
     return getTextContents(this.roots);
-  }
-
-  // ------------------------------------------------------------------
-  // Section management
-  // ------------------------------------------------------------------
-
-  /** Returns all top-level Section components with their indices. */
-  getSections(): SectionRef[] {
-    return opGetSections(this.roots);
-  }
-
-  /** Returns a single Section by its section-index, or null if not found. */
-  getSection(index: number): SectionRef | null {
-    return opGetSection(this.roots, index);
-  }
-
-  /** Removes a Section by its section-index. Returns true if removed. */
-  removeSection(index: number): this {
-    opRemoveSection(this.roots, index);
-    return this;
-  }
-
-  /** Replaces a Section in-place by its section-index. Returns true if replaced. */
-  replaceSection(index: number, replacement: RawComponent): this {
-    opReplaceSection(this.roots, index, replacement);
-    return this;
-  }
-
-  /** Moves a Section from one section-index to another. Returns true if moved. */
-  moveSection(from: number, to: number): this {
-    opMoveSection(this.roots, from, to);
-    return this;
-  }
-
-  // ------------------------------------------------------------------
-  // Separator management
-  // ------------------------------------------------------------------
-
-  /** Returns all top-level Separator components with their indices. */
-  getSeparators(): SeparatorRef[] {
-    return getSeparators(this.roots);
-  }
-
-  /** Returns a single Separator by its separator-index, or null if not found. */
-  getSeparator(index: number): SeparatorRef | null {
-    return getSeparator(this.roots, index);
-  }
-
-  /** Removes a Separator by its separator-index. Returns `this` for chaining. */
-  removeSeparator(index: number): this {
-    removeSeparator(this.roots, index);
-    return this;
-  }
-
-  /** Replaces a Separator in-place by its separator-index. Returns `this` for chaining. */
-  replaceSeparator(index: number, replacement: RawComponent): this {
-    replaceSeparator(this.roots, index, replacement);
-    return this;
-  }
-
-  /** Moves a Separator from one separator-index to another. Returns `this` for chaining. */
-  moveSeparator(from: number, to: number): this {
-    moveSeparator(this.roots, from, to);
-    return this;
-  }
-
-  // ------------------------------------------------------------------
-  // TextDisplay management
-  // ------------------------------------------------------------------
-
-  /** Returns all top-level TextDisplay components with their indices. */
-  getTextDisplays(): TextDisplayRef[] {
-    return getTextDisplays(this.roots);
-  }
-
-  /** Returns a single TextDisplay by its index, or null if not found. */
-  getTextDisplay(index: number): TextDisplayRef | null {
-    return getTextDisplay(this.roots, index);
-  }
-
-  /** Removes a TextDisplay by its index. Returns `this` for chaining. */
-  removeTextDisplay(index: number): this {
-    removeTextDisplay(this.roots, index);
-    return this;
-  }
-
-  /** Replaces a TextDisplay in-place by its index. Returns `this` for chaining. */
-  replaceTextDisplay(index: number, replacement: RawComponent): this {
-    replaceTextDisplay(this.roots, index, replacement);
-    return this;
-  }
-
-  /** Moves a TextDisplay from one index to another. Returns `this` for chaining. */
-  moveTextDisplay(from: number, to: number): this {
-    moveTextDisplay(this.roots, from, to);
-    return this;
-  }
-
-  // ------------------------------------------------------------------
-  // MediaGallery management
-  // ------------------------------------------------------------------
-
-  /** Returns all top-level MediaGallery components with their indices. */
-  getMediaGalleries(): MediaGalleryRef[] {
-    return getMediaGalleries(this.roots);
-  }
-
-  /** Returns a single MediaGallery by its index, or null if not found. */
-  getMediaGallery(index: number): MediaGalleryRef | null {
-    return getMediaGallery(this.roots, index);
-  }
-
-  /** Removes a MediaGallery by its index. Returns `this` for chaining. */
-  removeMediaGallery(index: number): this {
-    removeMediaGallery(this.roots, index);
-    return this;
-  }
-
-  /** Replaces a MediaGallery in-place by its index. Returns `this` for chaining. */
-  replaceMediaGallery(index: number, replacement: RawComponent): this {
-    replaceMediaGallery(this.roots, index, replacement);
-    return this;
-  }
-
-  /** Moves a MediaGallery from one index to another. Returns `this` for chaining. */
-  moveMediaGallery(from: number, to: number): this {
-    moveMediaGallery(this.roots, from, to);
-    return this;
-  }
-
-  // ------------------------------------------------------------------
-  // ActionRow management
-  // ------------------------------------------------------------------
-
-  /** Returns all top-level ActionRow components with their indices. */
-  getActionRows(): ActionRowRef[] {
-    return getActionRows(this.roots);
-  }
-
-  /** Returns a single ActionRow by its index, or null if not found. */
-  getActionRow(index: number): ActionRowRef | null {
-    return getActionRow(this.roots, index);
-  }
-
-  /** Removes an ActionRow by its index. Returns `this` for chaining. */
-  removeActionRow(index: number): this {
-    removeActionRow(this.roots, index);
-    return this;
-  }
-
-  /** Replaces an ActionRow in-place by its index. Returns `this` for chaining. */
-  replaceActionRow(index: number, replacement: RawComponent): this {
-    replaceActionRow(this.roots, index, replacement);
-    return this;
-  }
-
-  /** Moves an ActionRow from one index to another. Returns `this` for chaining. */
-  moveActionRow(from: number, to: number): this {
-    moveActionRow(this.roots, from, to);
-    return this;
   }
 
   /** Iterates every node in the tree. */
