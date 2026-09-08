@@ -1,4 +1,4 @@
-# 📦 discordjs-components-v2 v2
+# 📦 discordjs-components-v2
 
 [![npm version](https://badge.fury.io/js/discordjs-components-v2.svg)](https://www.npmjs.com/package/discordjs-components-v2)
 [![GitHub license](https://img.shields.io/github/license/ichh0/discord-components-v2)](https://github.com/ichh0/discord-components-v2/blob/main/license)
@@ -77,12 +77,12 @@ await builder.send(interaction); // editReply under the hood
 
 `parseComponents()` / `V2Builder.parse()` accepts:
 
-| Input | Example |
-|---|---|
-| raw component array | `[...message.components]` |
-| message-like object | `{ components: [...], content }` (fetched Message works too) |
-| single component | `{ type: 17, components: [...] }` |
-| anything with `.toJSON()` | discord.js builders / component instances |
+| Input                     | Example                                                      |
+| ------------------------- | ------------------------------------------------------------ |
+| raw component array       | `[...message.components]`                                    |
+| message-like object       | `{ components: [...], content }` (fetched Message works too) |
+| single component          | `{ type: 17, components: [...] }`                            |
+| anything with `.toJSON()` | discord.js builders / component instances                    |
 
 If there is exactly one root and it's a Container, it is absorbed with all metadata (accent color, spoiler, children). Otherwise everything is wrapped into an implicit container so the fluent API keeps working.
 
@@ -94,11 +94,11 @@ If there is exactly one root and it's a Container, it is absorbed with all metad
 import { editComponents } from "discordjs-components-v2";
 
 const components = editComponents(await interaction.fetchReply())
-  .disableButtons()              // disable all buttons
-  .enableButtons("open")         // …except this one
-  .removeButtons("rules")        // drop the "rules" button entirely
-  .remove("pick")                // remove any component by customId
-  .remove("textDisplay", 1)      // remove the 2nd text block by kind index
+  .disableButtons() // disable all buttons
+  .enableButtons("open") // …except this one
+  .removeButtons("rules") // drop the "rules" button entirely
+  .remove("pick") // remove any component by customId
+  .remove("textDisplay", 1) // remove the 2nd text block by kind index
   .setButtonLabel("join", "Vote")
   .replaceText("100 coins", "200 coins")
   .toJSON();
@@ -128,18 +128,19 @@ Automatic cleanup after removals: empty ActionRows are pruned; a Section without
 
 ```ts
 editComponents(await interaction.fetchReply())
-  .removeSelectMenus({ type: "string" })          // drop every string select
+  .removeSelectMenus({ type: "string" }) // drop every string select
   .removeSelectMenus({ type: ["role", "user"], customIds: "filter" })
-  .clearSelectValues({ type: "mentionable" })     // reset the selection (default_values / default)
-  .getSelectMenus({ type: "user" })               // find selects (array of raw components)
-  .findSelectMenu({ customIds: "pick" })          // first match or null
-  .setSelectPlaceholder("pick", "Pick one")       // placeholder (undefined removes it)
-  .setSelectOptions("pick", [                     // replace a string select's options
+  .clearSelectValues({ type: "mentionable" }) // reset the selection (default_values / default)
+  .getSelectMenus({ type: "user" }) // find selects (array of raw components)
+  .findSelectMenu({ customIds: "pick" }) // first match or null
+  .setSelectPlaceholder("pick", "Pick one") // placeholder (undefined removes it)
+  .setSelectOptions("pick", [
+    // replace a string select's options
     { label: "X", value: "x", emoji: ":fire:" },
     { label: "Y", value: "y", default: true },
   ])
-  .setSelectMinMaxValues("pick", 1, 3)            // min/max (undefined removes)
-  .setSelectDisabled({ type: "role" })            // disable (false re-enables)
+  .setSelectMinMaxValues("pick", 1, 3) // min/max (undefined removes)
+  .setSelectDisabled({ type: "role" }) // disable (false re-enables)
   .replaceSelectMenu({ customIds: "roles" }, { type: 2, style: 1, label: "Go", custom_id: "go" })
   .toJSON();
 ```
@@ -160,31 +161,31 @@ Every search/removal API uses one unified selector:
 ### Search & info extraction
 
 ```ts
-builder.find("join");            // ComponentRef | null — node + path + parent
+builder.find("join"); // ComponentRef | null — node + path + parent
 builder.findAll(ComponentType.TextDisplay);
-builder.getTexts();              // contents of every text block
+builder.getTexts(); // contents of every text block
 
 findComponents(rawArray, selector); // standalone version
 ```
 
 ## 🧱 Builder methods
 
-| Method | Purpose |
-|---|---|
-| `.text(md)` | TextDisplay with markdown |
-| `.content(str)` | plain text as a TextDisplay after the container (CV2 forbids the `content` field) |
-| `.field(name, value, inline?)` | name/value pair |
-| `.fields([...])` | aligned two-column table inside ```ansi``` |
-| `.buttons(...)` | row of ≤5 buttons (`id`/`url`/`skuId`, style as string: `"Primary"`…) |
-| `.selectMenu.string/user/role/mentionable/channel(params)` | select menu in its own row |
-| `.section({ title, content?, thumbnailUrl?, button?, spoiler? })` | Section with thumbnail or button accessory |
-| `.gallery(urls \| items)` | MediaGallery up to 10 images |
-| `.media(buffer, name?)` | attachment + `attachment://…` gallery |
-| `.file(bufferOrPayload, name?, spoiler?)` | File component |
-| `.separator(size?, divider?)` | separator |
-| `.color(hex)` / `.spoiler(bool)` | container accent/spoiler |
-| `.setId(n)` | numeric container id |
-| `.clear()` / `.getAttachments()` | reset state / files |
+| Method                                                            | Purpose                                                                           |
+| ----------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| `.text(md)`                                                       | TextDisplay with markdown                                                         |
+| `.content(str)`                                                   | plain text as a TextDisplay after the container (CV2 forbids the `content` field) |
+| `.field(name, value, inline?)`                                    | name/value pair                                                                   |
+| `.fields([...])`                                                  | aligned two-column table inside `ansi`                                            |
+| `.buttons(...)`                                                   | row of ≤5 buttons (`id`/`url`/`skuId`, style as string: `"Primary"`…)             |
+| `.selectMenu.string/user/role/mentionable/channel(params)`        | select menu in its own row                                                        |
+| `.section({ title, content?, thumbnailUrl?, button?, spoiler? })` | Section with thumbnail or button accessory                                        |
+| `.gallery(urls \| items)`                                         | MediaGallery up to 10 images                                                      |
+| `.media(buffer, name?)`                                           | attachment + `attachment://…` gallery                                             |
+| `.file(bufferOrPayload, name?, spoiler?)`                         | File component                                                                    |
+| `.separator(size?, divider?)`                                     | separator                                                                         |
+| `.color(hex)` / `.spoiler(bool)`                                  | container accent/spoiler                                                          |
+| `.setId(n)`                                                       | numeric container id                                                              |
+| `.clear()` / `.getAttachments()`                                  | reset state / files                                                               |
 
 Editing methods are available right on the builder: `disableButtons`, `enableButtons`, `setDisabled`, `setButtonLabel`, `setButtonStyle`, `setButtonEmoji`, `setButtonUrl`, `remove`, `removeButtons`, `removeSelectMenus`, `clearSelectValues`, `setSelectPlaceholder`, `setSelectOptions`, `setSelectMinMaxValues`, `setSelectDisabled`, `getSelectMenus`, `findSelectMenu`, `replaceSelectMenu`, `renameCustomId`, `replaceText`, `find`, `findAll`, `getTexts`.
 
@@ -207,7 +208,13 @@ const modal = new V2ModalBuilder()
     required: true,
   })
   .roleSelect({ label: "Pick a role", customId: "give_role", required: true })
-  .channelSelect({ label: "Publish channel", customId: "publish_channel", maxValues: 1, minValues: 1, channelTypes: [0] })
+  .channelSelect({
+    label: "Publish channel",
+    customId: "publish_channel",
+    maxValues: 1,
+    minValues: 1,
+    channelTypes: [0],
+  })
   .radioGroup({
     label: "Input type",
     customId: "type_input",
@@ -236,30 +243,30 @@ const v2Modal = new V2ModalBuilder({ customId, title })
 if (isUpdate) v2Modal.setTextInputValue("question", questionData.label);
 
 const input = v2Modal.component("placeholder"); // live TextInputBuilder
-input.setPlaceholder("new placeholder");         // mutate directly
+input.setPlaceholder("new placeholder"); // mutate directly
 input.setRequired(true);
 
 await ctx.showModal(v2Modal.build());
 ```
 
-| Method | Returns |
-|---|---|
-| `.component(customId)` | live field builder (`TextInputBuilder` / select / `RadioGroupBuilder`) or `undefined` |
-| `.textInputComponent(customId)` | `TextInputBuilder \| undefined` — text inputs only |
-| `.setTextInputValue(customId, value)` | chainable value setter (`this`), throws for unknown `customId` or non-text field |
-| `.inner` | underlying discord.js `ModalBuilder` (rarely needed) |
+| Method                                | Returns                                                                               |
+| ------------------------------------- | ------------------------------------------------------------------------------------- |
+| `.component(customId)`                | live field builder (`TextInputBuilder` / select / `RadioGroupBuilder`) or `undefined` |
+| `.textInputComponent(customId)`       | `TextInputBuilder \| undefined` — text inputs only                                    |
+| `.setTextInputValue(customId, value)` | chainable value setter (`this`), throws for unknown `customId` or non-text field      |
+| `.inner`                              | underlying discord.js `ModalBuilder` (rarely needed)                                  |
 
 Anything can be mutated through the returned builder: `.setValue()`, `.setRequired()`, `.setPlaceholder()`, `.setOptions()`, `.setDefaultRoles()` and so on.
 
 Default-value setters for selects and radio (defaults can be changed even after the field was added):
 
-| Method | What it does |
-|---|---|
-| `.setRadioGroupDefault(customId, value)` | mark a radio option (throws if the option doesn't exist) |
-| `.setStringSelectDefaults(customId, values[])` | mark multi-select values |
-| `.setRoleSelectDefaults(customId, roleIds[])` | default roles |
-| `.setChannelSelectDefaults(customId, channelIds[])` | default channels |
-| `.setUserSelectDefaults(customId, userIds[])` | default users |
+| Method                                                | What it does                                                 |
+| ----------------------------------------------------- | ------------------------------------------------------------ |
+| `.setRadioGroupDefault(customId, value)`              | mark a radio option (throws if the option doesn't exist)     |
+| `.setStringSelectDefaults(customId, values[])`        | mark multi-select values                                     |
+| `.setRoleSelectDefaults(customId, roleIds[])`         | default roles                                                |
+| `.setChannelSelectDefaults(customId, channelIds[])`   | default channels                                             |
+| `.setUserSelectDefaults(customId, userIds[])`         | default users                                                |
 | `.setMentionableSelectDefaults(customId, defaults[])` | defaults for mentionable: `{ id, type: "user" \| "role" }[]` |
 
 ```ts
@@ -280,9 +287,9 @@ if (savedFilter) {
 ```ts
 const query = modal.parseSubmit(interaction); // ModalSubmitInteraction
 
-query.name_nabor;      // string — textInput
-query.type_input;      // string | null — radio
-query.give_role;       // string[] | null — checked role ids (or users/channels/mentionables)
+query.name_nabor; // string — textInput
+query.type_input; // string | null — radio
+query.give_role; // string[] | null — checked role ids (or users/channels/mentionables)
 query.publish_channel; // string[] | null
 ```
 
@@ -326,14 +333,14 @@ await newsV2Modal.show(interaction); // eqv. interaction.showModal(newsV2Modal.b
 
 `V2Builder` and `ComponentsEditor` let you flexibly manage components inside the container by their index: sections (`Section`), separators (`Separator`), text blocks (`TextDisplay`), galleries (`MediaGallery`) and action rows (`ActionRow`). Each type is indexed independently (only siblings of the same type are counted) — the shared mechanism is called a "kind" (`"section" | "separator" | "textDisplay" | "actionRow" | "mediaGallery"`), and any of them can be removed, replaced or reordered.
 
-| Method | Purpose |
-|---|---|
-| `.all(kind)` · `.get(kind, i)` | list / one `{ index, component, containerIndex }` |
-| `.remove(kind, i)` · `.replace({ kind, index }, r)` | remove / replace by kind index |
-| `.move(kind, from, to)` | reorder (move also lives in `lib/advanced`) |
+| Method                                                                            | Purpose                                                                   |
+| --------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| `.all(kind)` · `.get(kind, i)`                                                    | list / one `{ index, component, containerIndex }`                         |
+| `.remove(kind, i)` · `.replace({ kind, index }, r)`                               | remove / replace by kind index                                            |
+| `.move(kind, from, to)`                                                           | reorder (move also lives in `lib/advanced`)                               |
 | `.sections` / `.separators` / `.textDisplays` / `.actionRows` / `.mediaGalleries` | namespace: `.all()`, `.get(i)`, `.set(i, v)`, `.remove(i)`, `.move(a, b)` |
 
-All *remove / replace / move / set* methods return `this` for chaining. `set` for `textDisplay` accepts a string: `builder.textDisplays.set(2, "new text")`.
+All _remove / replace / move / set_ methods return `this` for chaining. `set` for `textDisplay` accepts a string: `builder.textDisplays.set(2, "new text")`.
 
 ```ts
 const builder = V2Builder.parse(message);
@@ -353,11 +360,14 @@ while (builder.all("separator").length) builder.remove("separator", 0);
 builder.remove("textDisplay", 0);
 
 // Replace the first section entirely
-builder.replace({ kind: "section", index: 0 }, {
-  type: ComponentType.Section,
-  components: [{ type: ComponentType.TextDisplay, content: "**New title**\nNew content" }],
-  accessory: { type: ComponentType.Thumbnail, media: { url: "https://example.com/img.png" } },
-});
+builder.replace(
+  { kind: "section", index: 0 },
+  {
+    type: ComponentType.Section,
+    components: [{ type: ComponentType.TextDisplay, content: "**New title**\nNew content" }],
+    accessory: { type: ComponentType.Thumbnail, media: { url: "https://example.com/img.png" } },
+  },
+);
 
 // Move the last section to the top
 builder.move("section", 2, 0);
@@ -371,10 +381,7 @@ await builder.send(interaction);
 The same operations are available through `ComponentsEditor`:
 
 ```ts
-editComponents(message)
-  .remove("separator", 1)
-  .remove("textDisplay", 0)
-  .all("section");
+editComponents(message).remove("separator", 1).remove("textDisplay", 0).all("section");
 ```
 
 And as standalone functions over a raw container-children array (`getAllByKind`, `getByKind`, `removeByKind`, `replaceByKind` from the root; `moveByKind` from `lib/advanced`) — these auto-expand a root container:
@@ -436,10 +443,10 @@ Cache-free components = state lives in `custom_id` itself. A one-liner codec of 
 import { CustomIdBuilder, CustomIdError } from "discordjs-components-v2";
 
 const id = CustomIdBuilder.build({
-  name: "_modal",       // autocomplete: "_selectmenu" | "_button" | "_modal" | string
-  entityId: draft.id,   // "not"/undefined/"" → skipped (means "no entity")
+  name: "_modal", // autocomplete: "_selectmenu" | "_button" | "_modal" | string
+  entityId: draft.id, // "not"/undefined/"" → skipped (means "no entity")
   executorId,
-  rest: ["p", "2"],     // need more data? a plain array of segments
+  rest: ["p", "2"], // need more data? a plain array of segments
 });
 // "_modal:x7k:555:p:2" — always ≤ 100 chars
 
@@ -453,15 +460,15 @@ try {
 }
 ```
 
-| Method / Constant | Return |
-|---|---|
-| `.build(parts)` | assemble the id; throws `CustomIdError` on empty name, `:` inside a segment, or overflow >100 chars (with «shrink by N») |
-| `.parse(customId)` | lenient split `{ name, entityId, executorId, rest, raw, length }`, never throws |
-| `.is(customId, name)` | valid + name match (router-ready) |
-| `.isValid(customId)` | true only if ≤100 chars and has a name |
-| `.capacityOf(parts)` / `.remaining(parts)` | chars used / left before the limit |
-| `CUSTOM_ID_MAX_LENGTH` | constant `100` |
-| `CustomIdError` | dedicated error class |
+| Method / Constant                          | Return                                                                                                                   |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------ |
+| `.build(parts)`                            | assemble the id; throws `CustomIdError` on empty name, `:` inside a segment, or overflow >100 chars (with «shrink by N») |
+| `.parse(customId)`                         | lenient split `{ name, entityId, executorId, rest, raw, length }`, never throws                                          |
+| `.is(customId, name)`                      | valid + name match (router-ready)                                                                                        |
+| `.isValid(customId)`                       | true only if ≤100 chars and has a name                                                                                   |
+| `.capacityOf(parts)` / `.remaining(parts)` | chars used / left before the limit                                                                                       |
+| `CUSTOM_ID_MAX_LENGTH`                     | constant `100`                                                                                                           |
+| `CustomIdError`                            | dedicated error class                                                                                                    |
 
 Drop-in replacement for your `CIB`:
 

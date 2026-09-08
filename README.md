@@ -1,4 +1,4 @@
-# 📦 discordjs-components-v2 v2
+# 📦 discordjs-components-v2
 
 [![npm version](https://badge.fury.io/js/discordjs-components-v2.svg)](https://www.npmjs.com/package/discordjs-components-v2)
 [![GitHub license](https://img.shields.io/github/license/ichh0/discord-components-v2)](https://github.com/ichh0/discord-components-v2/blob/main/license)
@@ -81,12 +81,12 @@ await builder.send(interaction); // editReply внутри
 
 `parseComponents()` / `V2Builder.parse()` принимает:
 
-| Вход | Пример |
-|---|---|
-| массив сырых компонентов | `[...message.components]` |
-| message-like объект | `{ components: [...], content }` (fetched Message тоже ок) |
-| одиночный компонент | `{ type: 17, components: [...] }` |
-| что угодно с `.toJSON()` | discord.js билдеры и инстансы компонентов |
+| Вход                     | Пример                                                     |
+| ------------------------ | ---------------------------------------------------------- |
+| массив сырых компонентов | `[...message.components]`                                  |
+| message-like объект      | `{ components: [...], content }` (fetched Message тоже ок) |
+| одиночный компонент      | `{ type: 17, components: [...] }`                          |
+| что угодно с `.toJSON()` | discord.js билдеры и инстансы компонентов                  |
 
 Если корневой компонент один и это контейнер — он поглощается целиком (цвет, spoiler, дети). Иначе всё оборачивается в неявный контейнер, чтобы fluent-API продолжало работать.
 
@@ -98,11 +98,11 @@ await builder.send(interaction); // editReply внутри
 import { editComponents } from "discordjs-components-v2";
 
 const components = editComponents(await interaction.fetchReply())
-  .disableButtons()              // выключить все кнопки
-  .enableButtons("open")         // …кроме одной
-  .removeButtons("rules")        // кнопку rules — удалить вообще
-  .remove("pick")                // убрать любой компонент по customId
-  .remove("textDisplay", 1)      // убрать 2-й текстовый блок по kind-индексу
+  .disableButtons() // выключить все кнопки
+  .enableButtons("open") // …кроме одной
+  .removeButtons("rules") // кнопку rules — удалить вообще
+  .remove("pick") // убрать любой компонент по customId
+  .remove("textDisplay", 1) // убрать 2-й текстовый блок по kind-индексу
   .setButtonLabel("join", "Голосовать")
   .replaceText("100 монет", "200 монет")
   .toJSON();
@@ -132,18 +132,19 @@ await interaction.editReply({ components, flags: 32768 });
 
 ```ts
 editComponents(await interaction.fetchReply())
-  .removeSelectMenus({ type: "string" })          // убрать все строковые селекты
+  .removeSelectMenus({ type: "string" }) // убрать все строковые селекты
   .removeSelectMenus({ type: ["role", "user"], customIds: "filter" })
-  .clearSelectValues({ type: "mentionable" })     // сбросить выбранное (default_values / default)
-  .getSelectMenus({ type: "user" })               // найти селекты (массив с raw-компонентами)
-  .findSelectMenu({ customIds: "pick" })          // первый подходящий или null
-  .setSelectPlaceholder("pick", "Выбери")         // placeholder (undefined — убрать)
-  .setSelectOptions("pick", [                     // заменить опции строкового селекта
+  .clearSelectValues({ type: "mentionable" }) // сбросить выбранное (default_values / default)
+  .getSelectMenus({ type: "user" }) // найти селекты (массив с raw-компонентами)
+  .findSelectMenu({ customIds: "pick" }) // первый подходящий или null
+  .setSelectPlaceholder("pick", "Выбери") // placeholder (undefined — убрать)
+  .setSelectOptions("pick", [
+    // заменить опции строкового селекта
     { label: "X", value: "x", emoji: ":fire:" },
     { label: "Y", value: "y", default: true },
   ])
-  .setSelectMinMaxValues("pick", 1, 3)            // min/max (undefined — убрать)
-  .setSelectDisabled({ type: "role" })            // disabled (false — включить обратно)
+  .setSelectMinMaxValues("pick", 1, 3) // min/max (undefined — убрать)
+  .setSelectDisabled({ type: "role" }) // disabled (false — включить обратно)
   .replaceSelectMenu({ customIds: "roles" }, { type: 2, style: 1, label: "Go", custom_id: "go" })
   .toJSON();
 ```
@@ -164,31 +165,31 @@ editComponents(await interaction.fetchReply())
 ### Поиск и извлечение информации
 
 ```ts
-builder.find("join");            // ComponentRef | null — нода + путь + родитель
+builder.find("join"); // ComponentRef | null — нода + путь + родитель
 builder.findAll(ComponentType.TextDisplay);
-builder.getTexts();              // содержимое всех текстовых блоков
+builder.getTexts(); // содержимое всех текстовых блоков
 
 findComponents(rawArray, selector); // standalone-версия
 ```
 
 ## 🧱 Методы билдера
 
-| Метод | Что делает |
-|---|---|
-| `.text(md)` | TextDisplay с markdown |
-| `.content(str)` | plain-текст как TextDisplay после контейнера (CV2 не разрешает поле `content`) |
-| `.field(name, value, inline?)` | пара «имя — значение» |
-| `.fields([...])` | выровненная двухколоночная таблица в ```ansi``` |
-| `.buttons(...)` | ряд из ≤5 кнопок (`id`/`url`/`skuId`, style строкой: `"Primary"`…) |
-| `.selectMenu.string/user/role/mentionable/channel(params)` | селект отдельным рядом |
-| `.section({ title, content?, thumbnailUrl?, button?, spoiler? })` | Section с thumbnail или кнопкой |
-| `.gallery(urls \| items)` | MediaGallery до 10 картинок |
-| `.media(buffer, name?)` | attachment + галерея `attachment://…` |
-| `.file(bufferOrPayload, name?, spoiler?)` | File-компонент |
-| `.separator(size?, divider?)` | разделитель |
-| `.color(hex)` / `.spoiler(bool)` | акцент/spoiler контейнера |
-| `.setId(n)` | числовой id контейнера |
-| `.clear()` / `.getAttachments()` | сброс состояния / файлы |
+| Метод                                                             | Что делает                                                                     |
+| ----------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| `.text(md)`                                                       | TextDisplay с markdown                                                         |
+| `.content(str)`                                                   | plain-текст как TextDisplay после контейнера (CV2 не разрешает поле `content`) |
+| `.field(name, value, inline?)`                                    | пара «имя — значение»                                                          |
+| `.fields([...])`                                                  | выровненная двухколоночная таблица в `ansi`                                    |
+| `.buttons(...)`                                                   | ряд из ≤5 кнопок (`id`/`url`/`skuId`, style строкой: `"Primary"`…)             |
+| `.selectMenu.string/user/role/mentionable/channel(params)`        | селект отдельным рядом                                                         |
+| `.section({ title, content?, thumbnailUrl?, button?, spoiler? })` | Section с thumbnail или кнопкой                                                |
+| `.gallery(urls \| items)`                                         | MediaGallery до 10 картинок                                                    |
+| `.media(buffer, name?)`                                           | attachment + галерея `attachment://…`                                          |
+| `.file(bufferOrPayload, name?, spoiler?)`                         | File-компонент                                                                 |
+| `.separator(size?, divider?)`                                     | разделитель                                                                    |
+| `.color(hex)` / `.spoiler(bool)`                                  | акцент/spoiler контейнера                                                      |
+| `.setId(n)`                                                       | числовой id контейнера                                                         |
+| `.clear()` / `.getAttachments()`                                  | сброс состояния / файлы                                                        |
 
 Методы редактирования доступны прямо на билдере: `disableButtons`, `enableButtons`, `setDisabled`, `setButtonLabel`, `setButtonStyle`, `setButtonEmoji`, `setButtonUrl`, `remove`, `removeButtons`, `removeSelectMenus`, `clearSelectValues`, `setSelectPlaceholder`, `setSelectOptions`, `setSelectMinMaxValues`, `setSelectDisabled`, `getSelectMenus`, `findSelectMenu`, `replaceSelectMenu`, `renameCustomId`, `replaceText`, `find`, `findAll`, `getTexts`.
 
@@ -211,7 +212,13 @@ const modal = new V2ModalBuilder()
     required: true,
   })
   .roleSelect({ label: "Выберите роль", customId: "give_role", required: true })
-  .channelSelect({ label: "Канал публикации", customId: "publish_channel", maxValues: 1, minValues: 1, channelTypes: [0] })
+  .channelSelect({
+    label: "Канал публикации",
+    customId: "publish_channel",
+    maxValues: 1,
+    minValues: 1,
+    channelTypes: [0],
+  })
   .radioGroup({
     label: "Тип ввода",
     customId: "type_input",
@@ -240,30 +247,30 @@ const v2Modal = new V2ModalBuilder({ customId, title })
 if (isUpdate) v2Modal.setTextInputValue("question", questionData.label);
 
 const input = v2Modal.component("placeholder"); // живой TextInputBuilder
-input.setPlaceholder("новый placeholder");        // мутируем напрямую
+input.setPlaceholder("новый placeholder"); // мутируем напрямую
 input.setRequired(true);
 
 await ctx.showModal(v2Modal.build());
 ```
 
-| Метод | Что даёт |
-|---|---|
-| `.component(customId)` | живой билдер поля (`TextInputBuilder` / селект / `RadioGroupBuilder`) или `undefined` |
-| `.textInputComponent(customId)` | `TextInputBuilder \| undefined` — только текстовые поля |
+| Метод                                 | Что даёт                                                                                      |
+| ------------------------------------- | --------------------------------------------------------------------------------------------- |
+| `.component(customId)`                | живой билдер поля (`TextInputBuilder` / селект / `RadioGroupBuilder`) или `undefined`         |
+| `.textInputComponent(customId)`       | `TextInputBuilder \| undefined` — только текстовые поля                                       |
 | `.setTextInputValue(customId, value)` | цепляющийся сеттер значения (`this`), кидает при неизвестном `customId` или не-текстовом поле |
-| `.inner` | лежащий в основе discord.js `ModalBuilder` (редко нужно) |
+| `.inner`                              | лежащий в основе discord.js `ModalBuilder` (редко нужно)                                      |
 
 Через возвращённый билдер мутируется всё: `.setValue()`, `.setRequired()`, `.setPlaceholder()`, `.setOptions()`, `.setDefaultRoles()` и т.д.
 
 Сеттеры по умолчанию для селектов и радио (дефолты можно менять даже после добавления поля):
 
-| Метод | Что делает |
-|---|---|
-| `.setRadioGroupDefault(customId, value)` | отметить вариант радио (кидает, если такого варианта нет) |
-| `.setStringSelectDefaults(customId, values[])` | отметить значения мультиселекта |
-| `.setRoleSelectDefaults(customId, roleIds[])` | дефолтные роли |
-| `.setChannelSelectDefaults(customId, channelIds[])` | дефолтные каналы |
-| `.setUserSelectDefaults(customId, userIds[])` | дефолтные пользователи |
+| Метод                                                 | Что делает                                                  |
+| ----------------------------------------------------- | ----------------------------------------------------------- |
+| `.setRadioGroupDefault(customId, value)`              | отметить вариант радио (кидает, если такого варианта нет)   |
+| `.setStringSelectDefaults(customId, values[])`        | отметить значения мультиселекта                             |
+| `.setRoleSelectDefaults(customId, roleIds[])`         | дефолтные роли                                              |
+| `.setChannelSelectDefaults(customId, channelIds[])`   | дефолтные каналы                                            |
+| `.setUserSelectDefaults(customId, userIds[])`         | дефолтные пользователи                                      |
 | `.setMentionableSelectDefaults(customId, defaults[])` | дефолты для mentionable: `{ id, type: "user" \| "role" }[]` |
 
 Пример:
@@ -286,9 +293,9 @@ if (savedFilter) {
 ```ts
 const query = modal.parseSubmit(interaction); // ModalSubmitInteraction
 
-query.name_nabor;      // string — textInput
-query.type_input;      // string | null — radio
-query.give_role;       // string[] | null — отмеченные id ролей (или users/channels/mentionables)
+query.name_nabor; // string — textInput
+query.type_input; // string | null — radio
+query.give_role; // string[] | null — отмеченные id ролей (или users/channels/mentionables)
 query.publish_channel; // string[] | null
 ```
 
@@ -332,14 +339,14 @@ await newsV2Modal.show(interaction); // eqv. interaction.showModal(newsV2Modal.b
 
 `V2Builder` и `ComponentsEditor` позволяют гибко управлять компонентами внутри контейнера по их индексу: секциями (`Section`), разделителями (`Separator`), текстовыми блоками (`TextDisplay`), галереями (`MediaGallery`) и рядами (`ActionRow`). Каждый тип индексируется отдельно (считаются только компоненты своего типа) — общий механизм для всех видов называется «kind» (`"section" | "separator" | "textDisplay" | "actionRow" | "mediaGallery"`), можно удалить, заменить или переставить любой из них.
 
-| Метод | Описание |
-|---|---|
-| `.all(kind)` · `.get(kind, i)` | список / один `{ index, component, containerIndex }` |
-| `.remove(kind, i)` · `.replace({ kind, index }, r)` | удалить / заменить по kind-индексу |
-| `.move(kind, from, to)` | переместить (move также в `lib/advanced`) |
+| Метод                                                                             | Описание                                                                  |
+| --------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| `.all(kind)` · `.get(kind, i)`                                                    | список / один `{ index, component, containerIndex }`                      |
+| `.remove(kind, i)` · `.replace({ kind, index }, r)`                               | удалить / заменить по kind-индексу                                        |
+| `.move(kind, from, to)`                                                           | переместить (move также в `lib/advanced`)                                 |
 | `.sections` / `.separators` / `.textDisplays` / `.actionRows` / `.mediaGalleries` | namespace: `.all()`, `.get(i)`, `.set(i, v)`, `.remove(i)`, `.move(a, b)` |
 
-Все *remove/replace/move/set* методы возвращают `this` для чейнинга. `set` для `textDisplay` принимает строку: `builder.textDisplays.set(2, "новый текст")`.
+Все _remove/replace/move/set_ методы возвращают `this` для чейнинга. `set` для `textDisplay` принимает строку: `builder.textDisplays.set(2, "новый текст")`.
 
 ```ts
 const builder = V2Builder.parse(message);
@@ -359,11 +366,16 @@ while (builder.all("separator").length) builder.remove("separator", 0);
 builder.remove("textDisplay", 0);
 
 // Заменить первую секцию целиком
-builder.replace({ kind: "section", index: 0 }, {
-  type: ComponentType.Section,
-  components: [{ type: ComponentType.TextDisplay, content: "**Новый заголовок**\nНовый контент" }],
-  accessory: { type: ComponentType.Thumbnail, media: { url: "https://example.com/img.png" } },
-});
+builder.replace(
+  { kind: "section", index: 0 },
+  {
+    type: ComponentType.Section,
+    components: [
+      { type: ComponentType.TextDisplay, content: "**Новый заголовок**\nНовый контент" },
+    ],
+    accessory: { type: ComponentType.Thumbnail, media: { url: "https://example.com/img.png" } },
+  },
+);
 
 // Переместить последнюю секцию наверх
 builder.move("section", 2, 0);
@@ -377,10 +389,7 @@ await builder.send(interaction);
 Те же операции доступны через `ComponentsEditor`:
 
 ```ts
-editComponents(message)
-  .remove("separator", 1)
-  .remove("textDisplay", 0)
-  .all("section");
+editComponents(message).remove("separator", 1).remove("textDisplay", 0).all("section");
 ```
 
 А также как standalone-функции над сырым массивом детей контейнера (`getAllByKind`, `getByKind`, `removeByKind`, `replaceByKind` из корня; `moveByKind` — из `lib/advanced`) — автоматом раскрывают корневой контейнер:
@@ -442,10 +451,10 @@ if (await pages.jump(ctx)) return; // сам делает update()/editReply()/r
 import { CustomIdBuilder, CustomIdError } from "discordjs-components-v2";
 
 const id = CustomIdBuilder.build({
-  name: "_modal",       // autocomplete: "_selectmenu" | "_button" | "_modal" | string
-  entityId: draft.id,   // "not"/undefined/"" → пропускается (как «нет сущности»)
+  name: "_modal", // autocomplete: "_selectmenu" | "_button" | "_modal" | string
+  entityId: draft.id, // "not"/undefined/"" → пропускается (как «нет сущности»)
   executorId,
-  rest: ["p", "2"],     // если нужно больше данных — простой массив сегментов
+  rest: ["p", "2"], // если нужно больше данных — простой массив сегментов
 });
 // "_modal:x7k:555:p:2" — всегда ≤ 100 символов
 
@@ -459,15 +468,15 @@ try {
 }
 ```
 
-| Метод/Константа | Что даёт |
-|---|---|
-| `.build(parts)` | собрать id, кинуть `CustomIdError` при пустом имени, `:` внутри сегмента или переполнении >100 символов (с числом «сократить на N») |
-| `.parse(customId)` | lenient-разбор `{ name, entityId, executorId, rest, raw, length }`, никогда не падает |
-| `.is(customId, name)` | валидность + совпадение имени (готово для роутера) |
-| `.isValid(customId)` | true только если до 100 символов и есть имя |
-| `.capacityOf(parts)` / `.remaining(parts)` | занято / свободно символов до лимита |
-| `CUSTOM_ID_MAX_LENGTH` | константа `100` |
-| `CustomIdError` | отдельный класс ошибок |
+| Метод/Константа                            | Что даёт                                                                                                                            |
+| ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `.build(parts)`                            | собрать id, кинуть `CustomIdError` при пустом имени, `:` внутри сегмента или переполнении >100 символов (с числом «сократить на N») |
+| `.parse(customId)`                         | lenient-разбор `{ name, entityId, executorId, rest, raw, length }`, никогда не падает                                               |
+| `.is(customId, name)`                      | валидность + совпадение имени (готово для роутера)                                                                                  |
+| `.isValid(customId)`                       | true только если до 100 символов и есть имя                                                                                         |
+| `.capacityOf(parts)` / `.remaining(parts)` | занято / свободно символов до лимита                                                                                                |
+| `CUSTOM_ID_MAX_LENGTH`                     | константа `100`                                                                                                                     |
+| `CustomIdError`                            | отдельный класс ошибок                                                                                                              |
 
 Замена вашего `CIB` — тот же API:
 
