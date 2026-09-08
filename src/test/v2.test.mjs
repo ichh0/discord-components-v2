@@ -58,6 +58,25 @@ test("build: payload structure and flags", () => {
   assert.equal(rows[1].components[0].type, ComponentType.StringSelect);
 });
 
+test("build: .content() becomes a top-level TextDisplay, never a legacy content field", () => {
+  const payload = new V2Builder()
+    .text("Блок")
+    .content("Привет из plain")
+    .build();
+  assert.equal(payload.content, undefined);
+  assert.equal(payload.components.length, 2);
+  assert.equal(payload.components[0].type, CONTAINER);
+  assert.equal(payload.components[1].type, TEXT);
+  assert.equal(payload.components[1].content, "Привет из plain");
+});
+
+test("parse: trailing top-level TextDisplay round-trips as plain content", () => {
+  const built = new V2Builder().text("Блок").content("123").build();
+  const rebuilt = parseComponents(built).build();
+  assert.deepEqual(rebuilt.components, built.components);
+  assert.deepEqual(rebuilt.flags, built.flags);
+});
+
 test("build: validation rejects empty action row", () => {
   const b = parseComponents([{ type: 1, components: [] }]);
   assert.throws(() => b.build(), /at least one/);
@@ -109,7 +128,9 @@ test("parse: round trip keeps everything (no cache needed)", () => {
 test("parse: accepts message-like objects and toJSON duck-typing", () => {
   const messageLike = { components: makeBuilt().components, content: "plain content", id: "m1" };
   const parsed = parseComponents(messageLike);
-  assert.equal(parsed.build().content, "plain content");
+  const out = parsed.build();
+  assert.equal(out.components[1].type, TEXT);
+  assert.equal(out.components[1].content, "plain content");
 
   const fakeDjsInstance = { toJSON: () => makeBuilt().components };
   assert.equal(parseComponents(fakeDjsInstance).build().components.length, 1);
@@ -269,8 +290,10 @@ test("parse: unwraps full fetched Message objects (regression: type must not be 
 
   // parseComponents works too and keeps plain content
   const parsed = parseComponents({ ...fetched, content: "hello content" });
-  assert.equal(parsed.build().content, "hello content");
-  assert.equal(parsed.build().components[0].type, CONTAINER);
+  const parsedOut = parsed.build();
+  assert.equal(parsedOut.components[0].type, CONTAINER);
+  assert.equal(parsedOut.components[1].type, TEXT);
+  assert.equal(parsedOut.components[1].content, "hello content");
 
   // toJSON duck-typing of a real djs Message instance
   const djsLike = { toJSON: () => ({ ...fetched }) };

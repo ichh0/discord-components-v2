@@ -15,7 +15,7 @@ import {
 	EPHEMERAL,
 	type RawComponent,
 } from "../core/constants";
-import { isContainer } from "../core/guards";
+import { isContainer, isTextDisplay } from "../core/guards";
 import {
 	hasComponentType,
 	isRecord,
@@ -87,7 +87,6 @@ export * from "./types";
  * ```
  */
 export interface V2Payload {
-	content?: string;
 	components: RawComponent[];
 	files?: FilePayload[];
 	flags: number;
@@ -141,11 +140,14 @@ export class V2Builder {
 	constructor(data?: Partial<APIContainerComponent> | readonly unknown[]) {
 		// Absorb a single Container from an array (e.g. fr.components → [container])
 		// just like parse() does, to avoid wrapping it in another Container.
-		if (
+		// A trailing top-level TextDisplay is plain content, so it is kept on the
+		// builder and re-emitted as a sibling on build().
+		const absorbableArray =
 			Array.isArray(data) &&
-			data.length === 1 &&
-			isContainer(data[0] as RawComponent)
-		) {
+			data.length >= 1 &&
+			isContainer(data[0] as RawComponent) &&
+			(data.length === 1 || (data.length === 2 && isTextDisplay(data[1] as RawComponent)));
+		if (absorbableArray) {
 			const c = JSON.parse(JSON.stringify(data[0])) as APIContainerComponent;
 			this.containerData = {
 				type: ComponentType.Container,
@@ -157,6 +159,11 @@ export class V2Builder {
 			}
 			if (typeof c.spoiler === "boolean")
 				this.containerData.spoiler = c.spoiler;
+			if (data.length === 2) {
+				this.plainContent = String(
+					(data[1] as { content: unknown }).content,
+				);
+			}
 			return;
 		}
 
@@ -237,8 +244,11 @@ export class V2Builder {
 
 		const roots = normalizeComponents(candidate) as RawComponent[];
 
-		if (roots.length === 1 && isContainer(roots[0])) {
+		if (roots.length >= 1 && isContainer(roots[0])) {
 			builder.containerData = roots[0];
+			if (roots.length === 2 && isTextDisplay(roots[1])) {
+				builder.plainContent = String(roots[1].content);
+			}
 		} else if (roots.length > 0) {
 			builder.containerData.components =
 				roots as APIContainerComponent["components"];
@@ -259,7 +269,10 @@ export class V2Builder {
 		return this;
 	}
 
-	/** Sets the plain message content shown above the components. */
+	/**
+	 * Sets plain message text. CV2 rejects a top-level `content` field, so it
+	 * is emitted as a TextDisplay component (type 10) right after the container.
+	 */
 	content(value: string): this {
 		this.plainContent = value;
 		return this;
@@ -793,6 +806,12 @@ export class V2Builder {
 	 */
 	build(): V2Payload {
 		const components: RawComponent[] = [this.containerData];
+		if (this.plainContent) {
+			components.push({
+				type: ComponentType.TextDisplay,
+				content: this.plainContent,
+			});
+		}
 		const errors = validateComponents(components);
 		if (!errors.valid) {
 			throw new Error(`Invalid components:\n- ${errors.errors.join("\n- ")}`);
@@ -802,7 +821,6 @@ export class V2Builder {
 			components,
 			flags: IS_COMPONENTS_V2,
 		};
-		if (this.plainContent) payload.content = this.plainContent;
 		if (this.attachments.length > 0) payload.files = [...this.attachments];
 		return payload;
 	}

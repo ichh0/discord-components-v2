@@ -100,7 +100,6 @@ export class V2Template {
     });
 
     const rebuilt = new V2Builder(roots);
-    if (payload.content) rebuilt.content(this.substitute(payload.content, values));
     if (payload.files) {
       for (const file of payload.files) rebuilt.getAttachments().push(file);
     }

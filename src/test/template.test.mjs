@@ -53,7 +53,7 @@ test("template: plain message content is substituted too", () => {
     new V2Builder().content("Показываю: {{n}}").text("Блок"),
   ).slot("n");
   const payload = tpl.render({ n: 42 }).build();
-  assert.equal(payload.content, "Показываю: 42");
+  assert.equal(payload.components[1].content, "Показываю: 42");
   assert.equal(textOf(payload), "Блок");
 });
 

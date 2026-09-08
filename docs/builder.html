@@ -91,7 +91,7 @@
       <div class="code-block">
         <div class="code-header"><span class="lang">ts</span><button class="copy-btn" type="button"><span aria-hidden="true">⧉</span> Копировать</button></div>
         <pre><code class="language-ts">new V2Builder()
-  .content("Сообщение над компонентами")  // plain, вне контейнера
+  .content("Сообщение после контейнера") // TextDisplay (type 10) рядом с контейнером
   .text("# Заголовок в TextDisplay")      // markdown-блок
   .field("Приз", "100 монет")             // "**Приз**\n100 монет"
   .field("Число", "7", true)              // inline: "**Число** 7"
@@ -191,7 +191,7 @@
           </thead>
           <tbody>
             <tr><td><code>.text(md)</code></td><td>TextDisplay с markdown</td></tr>
-            <tr><td><code>.content(str)</code></td><td>plain-контент над компонентами</td></tr>
+            <tr><td><code>.content(str)</code></td><td>plain-текст как TextDisplay после контейнера</td></tr>
             <tr><td><code>.field(name, value, inline?)</code></td><td>пара «имя — значение»</td></tr>
             <tr><td><code>.fields([...])</code></td><td>двухколоночная таблица в ```ansi```</td></tr>
             <tr><td><code>.buttons(...)</code></td><td>ряд из ≤ 5 кнопок (<code>id</code>/<code>url</code>/<code>skuId</code>)</td></tr>

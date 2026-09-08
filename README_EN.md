@@ -172,7 +172,7 @@ findComponents(rawArray, selector); // standalone version
 | Method | Purpose |
 |---|---|
 | `.text(md)` | TextDisplay with markdown |
-| `.content(str)` | plain content above components |
+| `.content(str)` | plain text as a TextDisplay after the container (CV2 forbids the `content` field) |
 | `.field(name, value, inline?)` | name/value pair |
 | `.fields([...])` | aligned two-column table inside ```ansi``` |
 | `.buttons(...)` | row of ≤5 buttons (`id`/`url`/`skuId`, style as string: `"Primary"`…) |

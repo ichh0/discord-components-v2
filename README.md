@@ -176,7 +176,7 @@ findComponents(rawArray, selector); // standalone-версия
 | Метод | Что делает |
 |---|---|
 | `.text(md)` | TextDisplay с markdown |
-| `.content(str)` | plain-контент над компонентами |
+| `.content(str)` | plain-текст как TextDisplay после контейнера (CV2 не разрешает поле `content`) |
 | `.field(name, value, inline?)` | пара «имя — значение» |
 | `.fields([...])` | выровненная двухколоночная таблица в ```ansi``` |
 | `.buttons(...)` | ряд из ≤5 кнопок (`id`/`url`/`skuId`, style строкой: `"Primary"`…) |
